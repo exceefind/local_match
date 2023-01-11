@@ -1,0 +1,216 @@
+INFO: 2022-12-17 18:17:40,107 : ----------------------------------------------------------------------------------------------------Experiment 56start!----------------------------------------------------------------------------------------------------
+INFO: 2022-12-17 18:17:40,107 : {'dataset': 'miniimagenet', 'data_root': 'data', 'transform': 'B', 'model': 'resnet12', 'img_size': 84, 'drop_gama': 0.3, 'max_epoch': 170, 'lr': 0.05, 't_lr': 0.001, 'step_size': 30, 'gama': 0.1, 'batch_size': 64, 'num_workers': 2, 'beta': 0.01, 'MLP_2': False, 'milestones': [100, 150], 'drop_rate': 0.5, 'reduce_dim': 160, 'FPN_list': None, 'idea': 'a+-b', 'flatten_fpn': False, 'val_freq': 10, 'local_mode': 'local_mix', 'set': 'val', 'n_way': 5, 'n_shot': 1, 'n_aug_support_samples': 1, 'n_queries': 15, 'temperature': 12.5, 'metric': 'cosine', 'n_episodes': 1000, 'n_local_proto': 3, 'save_all': False, 'test_batch_size': 1, 'random_val_task': False, 'sfc_lr': 100, 'sfc_bs': 5, 'sfc_update_step': 100, 'include_bg': False, 'norm': 'center', 'solver': 'opencv', 'deep_emd': False, 'form': 'L2', 'l2_strength': 1e-06, 'gpu': 5, 'save_dir': 'checkpoint', 'continue_pretrain': False, 'MultiStepLr': True, 'test_LR': True, 'model_id': '56', 'seed': 1, 'no_save_model': False, 'feature_pyramid': False, 'method': 'good_metric', 'test': True, 'penalty_c': 0.1, 'stop_grad': True, 'learnable_alpha': False, 'idea_variant': True, 'normalize_feat': False, 'normalize_bdc': False, 'no_diag': False, 'confusion': True, 'confusion_drop_rate': 0.0, 'k_c': 4, 'confusion_beta': 1.0, 'n_symmetry_aug': 1, 'ths_confusion': None, 'lego': False, 'temp_element': True}
+INFO: 2022-12-17 18:17:44,638 : ----------------------------------------------------------------------------------------------------Experiment 56start!----------------------------------------------------------------------------------------------------
+INFO: 2022-12-17 18:17:44,638 : {'dataset': 'miniimagenet', 'data_root': 'data', 'transform': 'B', 'model': 'resnet12', 'img_size': 84, 'drop_gama': 0.3, 'max_epoch': 170, 'lr': 0.05, 't_lr': 0.001, 'step_size': 30, 'gama': 0.1, 'batch_size': 64, 'num_workers': 2, 'beta': 0.01, 'MLP_2': False, 'milestones': [100, 150], 'drop_rate': 0.5, 'reduce_dim': 160, 'FPN_list': None, 'idea': 'a+-b', 'flatten_fpn': False, 'val_freq': 10, 'local_mode': 'local_mix', 'set': 'val', 'n_way': 5, 'n_shot': 1, 'n_aug_support_samples': 1, 'n_queries': 15, 'temperature': 12.5, 'metric': 'cosine', 'n_episodes': 1000, 'n_local_proto': 3, 'save_all': False, 'test_batch_size': 1, 'random_val_task': False, 'sfc_lr': 100, 'sfc_bs': 5, 'sfc_update_step': 100, 'include_bg': False, 'norm': 'center', 'solver': 'opencv', 'deep_emd': False, 'form': 'L2', 'l2_strength': 1e-06, 'gpu': 0, 'save_dir': 'checkpoint', 'continue_pretrain': False, 'MultiStepLr': True, 'test_LR': True, 'model_id': '56', 'seed': 1, 'no_save_model': False, 'feature_pyramid': False, 'method': 'good_metric', 'test': True, 'penalty_c': 0.1, 'stop_grad': True, 'learnable_alpha': False, 'idea_variant': True, 'normalize_feat': False, 'normalize_bdc': False, 'no_diag': False, 'confusion': True, 'confusion_drop_rate': 0.0, 'k_c': 4, 'confusion_beta': 1.0, 'n_symmetry_aug': 1, 'ths_confusion': None, 'lego': False, 'temp_element': True}
+INFO: 2022-12-17 18:21:01,552 : Epoch 0 of 170 | Avg_loss: 2.30 | Acc_train: 13.46  |  training eplase: 3.26 min
+INFO: 2022-12-17 18:24:15,123 : Epoch 1 of 170 | Avg_loss: 1.84 | Acc_train: 25.12  |  training eplase: 3.23 min
+INFO: 2022-12-17 18:27:29,743 : Epoch 2 of 170 | Avg_loss: 1.66 | Acc_train: 31.92  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:30:44,291 : Epoch 3 of 170 | Avg_loss: 1.54 | Acc_train: 36.97  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:33:58,950 : Epoch 4 of 170 | Avg_loss: 1.47 | Acc_train: 40.37  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:37:13,590 : Epoch 5 of 170 | Avg_loss: 1.40 | Acc_train: 43.40  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:40:28,309 : Epoch 6 of 170 | Avg_loss: 1.36 | Acc_train: 45.26  |  training eplase: 3.25 min
+INFO: 2022-12-17 18:43:42,819 : Epoch 7 of 170 | Avg_loss: 1.31 | Acc_train: 47.45  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:46:57,512 : Epoch 8 of 170 | Avg_loss: 1.29 | Acc_train: 48.60  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:50:12,026 : Epoch 9 of 170 | Avg_loss: 1.27 | Acc_train: 49.65  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:53:26,387 : Epoch 10 of 170 | Avg_loss: 1.24 | Acc_train: 50.97  |  training eplase: 3.24 min
+INFO: 2022-12-17 18:56:40,163 : Epoch 11 of 170 | Avg_loss: 1.22 | Acc_train: 51.72  |  training eplase: 3.23 min
+INFO: 2022-12-17 18:59:54,534 : Epoch 12 of 170 | Avg_loss: 1.21 | Acc_train: 52.42  |  training eplase: 3.24 min
+INFO: 2022-12-17 19:03:08,371 : Epoch 13 of 170 | Avg_loss: 1.19 | Acc_train: 53.03  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:06:22,192 : Epoch 14 of 170 | Avg_loss: 1.18 | Acc_train: 53.87  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:09:35,896 : Epoch 15 of 170 | Avg_loss: 1.16 | Acc_train: 54.68  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:12:49,688 : Epoch 16 of 170 | Avg_loss: 1.16 | Acc_train: 54.67  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:16:03,482 : Epoch 17 of 170 | Avg_loss: 1.15 | Acc_train: 55.36  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:19:17,348 : Epoch 18 of 170 | Avg_loss: 1.14 | Acc_train: 55.71  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:22:31,766 : Epoch 19 of 170 | Avg_loss: 1.13 | Acc_train: 56.31  |  training eplase: 3.24 min
+INFO: 2022-12-17 19:25:45,808 : Epoch 20 of 170 | Avg_loss: 1.12 | Acc_train: 56.57  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:28:59,722 : Epoch 21 of 170 | Avg_loss: 1.12 | Acc_train: 56.70  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:32:13,706 : Epoch 22 of 170 | Avg_loss: 1.11 | Acc_train: 57.43  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:35:27,740 : Epoch 23 of 170 | Avg_loss: 1.11 | Acc_train: 57.36  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:38:41,612 : Epoch 24 of 170 | Avg_loss: 1.10 | Acc_train: 57.61  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:41:56,263 : Epoch 25 of 170 | Avg_loss: 1.09 | Acc_train: 58.10  |  training eplase: 3.24 min
+INFO: 2022-12-17 19:45:10,389 : Epoch 26 of 170 | Avg_loss: 1.09 | Acc_train: 58.08  |  training eplase: 3.24 min
+INFO: 2022-12-17 19:48:24,539 : Epoch 27 of 170 | Avg_loss: 1.09 | Acc_train: 58.43  |  training eplase: 3.24 min
+INFO: 2022-12-17 19:51:38,595 : Epoch 28 of 170 | Avg_loss: 1.09 | Acc_train: 58.38  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:54:52,664 : Epoch 29 of 170 | Avg_loss: 1.08 | Acc_train: 58.74  |  training eplase: 3.23 min
+INFO: 2022-12-17 19:58:06,585 : Epoch 30 of 170 | Avg_loss: 1.07 | Acc_train: 59.18  |  training eplase: 3.23 min
+INFO: 2022-12-17 20:01:20,695 : Epoch 31 of 170 | Avg_loss: 1.07 | Acc_train: 59.46  |  training eplase: 3.24 min
+INFO: 2022-12-17 20:04:34,748 : Epoch 32 of 170 | Avg_loss: 1.07 | Acc_train: 59.26  |  training eplase: 3.23 min
+INFO: 2022-12-17 20:07:48,823 : Epoch 33 of 170 | Avg_loss: 1.07 | Acc_train: 59.36  |  training eplase: 3.23 min
+INFO: 2022-12-17 20:11:02,900 : Epoch 34 of 170 | Avg_loss: 1.06 | Acc_train: 59.64  |  training eplase: 3.23 min
+INFO: 2022-12-17 20:14:17,528 : Epoch 35 of 170 | Avg_loss: 1.06 | Acc_train: 59.56  |  training eplase: 3.24 min
+INFO: 2022-12-17 20:17:31,686 : Epoch 36 of 170 | Avg_loss: 1.06 | Acc_train: 59.85  |  training eplase: 3.24 min
+INFO: 2022-12-17 20:20:45,706 : Epoch 37 of 170 | Avg_loss: 1.06 | Acc_train: 59.99  |  training eplase: 3.23 min
+INFO: 2022-12-17 20:23:59,900 : Epoch 38 of 170 | Avg_loss: 1.05 | Acc_train: 60.12  |  training eplase: 3.24 min
+INFO: 2022-12-17 20:27:14,087 : Epoch 39 of 170 | Avg_loss: 1.06 | Acc_train: 59.86  |  training eplase: 3.24 min
+INFO: 2022-12-17 20:30:28,219 : Epoch 40 of 170 | Avg_loss: 1.05 | Acc_train: 60.51  |  training eplase: 3.24 min
+INFO: 2022-12-17 20:33:42,282 : Epoch 41 of 170 | Avg_loss: 1.05 | Acc_train: 60.20  |  training eplase: 3.23 min
+INFO: 2022-12-17 20:36:57,382 : Epoch 42 of 170 | Avg_loss: 1.04 | Acc_train: 60.41  |  training eplase: 3.25 min
+INFO: 2022-12-17 20:40:13,525 : Epoch 43 of 170 | Avg_loss: 1.05 | Acc_train: 60.27  |  training eplase: 3.27 min
+INFO: 2022-12-17 20:43:29,983 : Epoch 44 of 170 | Avg_loss: 1.05 | Acc_train: 60.54  |  training eplase: 3.27 min
+INFO: 2022-12-17 20:46:44,799 : Epoch 45 of 170 | Avg_loss: 1.05 | Acc_train: 60.47  |  training eplase: 3.25 min
+INFO: 2022-12-17 20:50:04,836 : Epoch 46 of 170 | Avg_loss: 1.05 | Acc_train: 60.54  |  training eplase: 3.33 min
+INFO: 2022-12-17 20:53:20,667 : Epoch 47 of 170 | Avg_loss: 1.04 | Acc_train: 60.92  |  training eplase: 3.26 min
+INFO: 2022-12-17 20:56:36,539 : Epoch 48 of 170 | Avg_loss: 1.04 | Acc_train: 60.85  |  training eplase: 3.26 min
+INFO: 2022-12-17 20:59:52,199 : Epoch 49 of 170 | Avg_loss: 1.04 | Acc_train: 60.96  |  training eplase: 3.26 min
+INFO: 2022-12-17 21:03:07,661 : Epoch 50 of 170 | Avg_loss: 1.04 | Acc_train: 61.13  |  training eplase: 3.26 min
+INFO: 2022-12-17 21:06:21,841 : Epoch 51 of 170 | Avg_loss: 1.04 | Acc_train: 60.60  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:09:37,047 : Epoch 52 of 170 | Avg_loss: 1.04 | Acc_train: 60.50  |  training eplase: 3.25 min
+INFO: 2022-12-17 21:12:53,344 : Epoch 53 of 170 | Avg_loss: 1.04 | Acc_train: 61.05  |  training eplase: 3.27 min
+INFO: 2022-12-17 21:16:07,991 : Epoch 54 of 170 | Avg_loss: 1.03 | Acc_train: 61.16  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:19:22,333 : Epoch 55 of 170 | Avg_loss: 1.03 | Acc_train: 61.27  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:22:36,842 : Epoch 56 of 170 | Avg_loss: 1.03 | Acc_train: 61.39  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:25:51,356 : Epoch 57 of 170 | Avg_loss: 1.03 | Acc_train: 61.70  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:29:05,648 : Epoch 58 of 170 | Avg_loss: 1.04 | Acc_train: 60.84  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:32:19,971 : Epoch 59 of 170 | Avg_loss: 1.03 | Acc_train: 61.43  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:35:34,331 : Epoch 60 of 170 | Avg_loss: 1.03 | Acc_train: 61.41  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:38:48,638 : Epoch 61 of 170 | Avg_loss: 1.03 | Acc_train: 61.56  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:42:03,001 : Epoch 62 of 170 | Avg_loss: 1.03 | Acc_train: 61.55  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:45:17,973 : Epoch 63 of 170 | Avg_loss: 1.03 | Acc_train: 61.34  |  training eplase: 3.25 min
+INFO: 2022-12-17 21:48:32,334 : Epoch 64 of 170 | Avg_loss: 1.03 | Acc_train: 61.56  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:51:46,696 : Epoch 65 of 170 | Avg_loss: 1.03 | Acc_train: 61.65  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:55:01,044 : Epoch 66 of 170 | Avg_loss: 1.03 | Acc_train: 61.54  |  training eplase: 3.24 min
+INFO: 2022-12-17 21:58:15,548 : Epoch 67 of 170 | Avg_loss: 1.03 | Acc_train: 61.36  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:01:30,459 : Epoch 68 of 170 | Avg_loss: 1.02 | Acc_train: 61.60  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:04:45,972 : Epoch 69 of 170 | Avg_loss: 1.03 | Acc_train: 61.57  |  training eplase: 3.26 min
+INFO: 2022-12-17 22:08:00,939 : Epoch 70 of 170 | Avg_loss: 1.03 | Acc_train: 61.61  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:11:15,835 : Epoch 71 of 170 | Avg_loss: 1.02 | Acc_train: 61.94  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:14:30,711 : Epoch 72 of 170 | Avg_loss: 1.02 | Acc_train: 61.66  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:17:45,510 : Epoch 73 of 170 | Avg_loss: 1.02 | Acc_train: 62.15  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:21:00,407 : Epoch 74 of 170 | Avg_loss: 1.02 | Acc_train: 61.40  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:24:15,106 : Epoch 75 of 170 | Avg_loss: 1.03 | Acc_train: 61.92  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:27:30,115 : Epoch 76 of 170 | Avg_loss: 1.02 | Acc_train: 61.79  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:30:44,212 : Epoch 77 of 170 | Avg_loss: 1.03 | Acc_train: 61.60  |  training eplase: 3.23 min
+INFO: 2022-12-17 22:33:58,326 : Epoch 78 of 170 | Avg_loss: 1.03 | Acc_train: 61.59  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:37:12,468 : Epoch 79 of 170 | Avg_loss: 1.02 | Acc_train: 62.26  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:40:26,543 : Epoch 80 of 170 | Avg_loss: 1.03 | Acc_train: 61.64  |  training eplase: 3.23 min
+INFO: 2022-12-17 22:43:40,696 : Epoch 81 of 170 | Avg_loss: 1.02 | Acc_train: 62.14  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:46:55,541 : Epoch 82 of 170 | Avg_loss: 1.02 | Acc_train: 61.58  |  training eplase: 3.25 min
+INFO: 2022-12-17 22:50:09,742 : Epoch 83 of 170 | Avg_loss: 1.02 | Acc_train: 61.52  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:53:24,006 : Epoch 84 of 170 | Avg_loss: 1.01 | Acc_train: 62.51  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:56:38,140 : Epoch 85 of 170 | Avg_loss: 1.02 | Acc_train: 62.34  |  training eplase: 3.24 min
+INFO: 2022-12-17 22:59:52,319 : Epoch 86 of 170 | Avg_loss: 1.02 | Acc_train: 62.07  |  training eplase: 3.24 min
+INFO: 2022-12-17 23:03:06,588 : Epoch 87 of 170 | Avg_loss: 1.03 | Acc_train: 62.16  |  training eplase: 3.24 min
+INFO: 2022-12-17 23:06:21,453 : Epoch 88 of 170 | Avg_loss: 1.01 | Acc_train: 62.09  |  training eplase: 3.25 min
+INFO: 2022-12-17 23:09:35,777 : Epoch 89 of 170 | Avg_loss: 1.02 | Acc_train: 61.62  |  training eplase: 3.24 min
+INFO: 2022-12-17 23:12:49,966 : Epoch 90 of 170 | Avg_loss: 1.02 | Acc_train: 61.86  |  training eplase: 3.24 min
+INFO: 2022-12-17 23:16:46,834 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-17 23:16:46,834 : meta_val acc: 58.63 +- 0.63 |  best meta_val acc :58.63 +- 0.63  |  elapse: 3.95 min
+INFO: 2022-12-17 23:16:46,834 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-17 23:20:42,624 : meta_test acc: 58.27 +- 0.64   elapse: 3.93 min
+INFO: 2022-12-17 23:20:42,624 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-17 23:23:56,455 : Epoch 91 of 170 | Avg_loss: 1.02 | Acc_train: 61.92  |  training eplase: 3.23 min
+INFO: 2022-12-17 23:27:11,016 : Epoch 92 of 170 | Avg_loss: 1.02 | Acc_train: 61.85  |  training eplase: 3.24 min
+INFO: 2022-12-17 23:30:24,930 : Epoch 93 of 170 | Avg_loss: 1.02 | Acc_train: 62.13  |  training eplase: 3.23 min
+INFO: 2022-12-17 23:33:38,865 : Epoch 94 of 170 | Avg_loss: 1.02 | Acc_train: 62.33  |  training eplase: 3.23 min
+INFO: 2022-12-17 23:36:52,920 : Epoch 95 of 170 | Avg_loss: 1.03 | Acc_train: 61.45  |  training eplase: 3.23 min
+INFO: 2022-12-17 23:40:06,949 : Epoch 96 of 170 | Avg_loss: 1.01 | Acc_train: 62.32  |  training eplase: 3.23 min
+INFO: 2022-12-17 23:43:20,990 : Epoch 97 of 170 | Avg_loss: 1.02 | Acc_train: 62.19  |  training eplase: 3.23 min
+INFO: 2022-12-17 23:46:35,638 : Epoch 98 of 170 | Avg_loss: 1.02 | Acc_train: 62.19  |  training eplase: 3.24 min
+INFO: 2022-12-17 23:49:49,687 : Epoch 99 of 170 | Avg_loss: 1.02 | Acc_train: 62.19  |  training eplase: 3.23 min
+INFO: 2022-12-17 23:53:03,841 : Epoch 100 of 170 | Avg_loss: 0.80 | Acc_train: 72.11  |  training eplase: 3.24 min
+INFO: 2022-12-17 23:56:59,336 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-17 23:56:59,336 : meta_val acc: 64.81 +- 0.63 |  best meta_val acc :64.81 +- 0.63  |  elapse: 3.92 min
+INFO: 2022-12-17 23:56:59,336 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 00:00:53,907 : meta_test acc: 63.30 +- 0.64   elapse: 3.91 min
+INFO: 2022-12-18 00:00:53,907 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 00:04:08,572 : Epoch 101 of 170 | Avg_loss: 0.73 | Acc_train: 75.14  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:07:22,726 : Epoch 102 of 170 | Avg_loss: 0.71 | Acc_train: 76.21  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:10:36,887 : Epoch 103 of 170 | Avg_loss: 0.69 | Acc_train: 76.96  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:13:51,000 : Epoch 104 of 170 | Avg_loss: 0.67 | Acc_train: 77.79  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:17:05,340 : Epoch 105 of 170 | Avg_loss: 0.67 | Acc_train: 78.33  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:20:19,673 : Epoch 106 of 170 | Avg_loss: 0.66 | Acc_train: 78.21  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:23:33,765 : Epoch 107 of 170 | Avg_loss: 0.65 | Acc_train: 78.84  |  training eplase: 3.23 min
+INFO: 2022-12-18 00:26:48,583 : Epoch 108 of 170 | Avg_loss: 0.65 | Acc_train: 78.96  |  training eplase: 3.25 min
+INFO: 2022-12-18 00:30:02,764 : Epoch 109 of 170 | Avg_loss: 0.64 | Acc_train: 79.60  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:33:17,049 : Epoch 110 of 170 | Avg_loss: 0.64 | Acc_train: 79.80  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:37:12,166 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 00:37:12,166 : meta_val acc: 65.92 +- 0.67 |  best meta_val acc :65.92 +- 0.67  |  elapse: 3.92 min
+INFO: 2022-12-18 00:37:12,166 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 00:41:06,828 : meta_test acc: 63.62 +- 0.64   elapse: 3.91 min
+INFO: 2022-12-18 00:41:06,828 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 00:44:21,699 : Epoch 111 of 170 | Avg_loss: 0.63 | Acc_train: 79.98  |  training eplase: 3.25 min
+INFO: 2022-12-18 00:47:35,756 : Epoch 112 of 170 | Avg_loss: 0.63 | Acc_train: 80.08  |  training eplase: 3.23 min
+INFO: 2022-12-18 00:50:49,903 : Epoch 113 of 170 | Avg_loss: 0.62 | Acc_train: 80.46  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:54:04,025 : Epoch 114 of 170 | Avg_loss: 0.62 | Acc_train: 80.21  |  training eplase: 3.24 min
+INFO: 2022-12-18 00:57:18,138 : Epoch 115 of 170 | Avg_loss: 0.62 | Acc_train: 80.53  |  training eplase: 3.24 min
+INFO: 2022-12-18 01:00:32,205 : Epoch 116 of 170 | Avg_loss: 0.62 | Acc_train: 80.78  |  training eplase: 3.23 min
+INFO: 2022-12-18 01:03:46,364 : Epoch 117 of 170 | Avg_loss: 0.62 | Acc_train: 80.69  |  training eplase: 3.24 min
+INFO: 2022-12-18 01:07:01,116 : Epoch 118 of 170 | Avg_loss: 0.61 | Acc_train: 80.88  |  training eplase: 3.25 min
+INFO: 2022-12-18 01:10:15,302 : Epoch 119 of 170 | Avg_loss: 0.61 | Acc_train: 81.02  |  training eplase: 3.24 min
+INFO: 2022-12-18 01:13:29,347 : Epoch 120 of 170 | Avg_loss: 0.61 | Acc_train: 80.99  |  training eplase: 3.23 min
+INFO: 2022-12-18 01:17:24,588 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 01:17:24,588 : meta_val acc: 65.59 +- 0.65 |  best meta_val acc :65.92 +- 0.67  |  elapse: 3.92 min
+INFO: 2022-12-18 01:17:24,588 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 01:21:19,182 : meta_test acc: 63.41 +- 0.64   elapse: 3.91 min
+INFO: 2022-12-18 01:21:19,182 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 01:24:33,728 : Epoch 121 of 170 | Avg_loss: 0.60 | Acc_train: 81.25  |  training eplase: 3.24 min
+INFO: 2022-12-18 01:27:47,822 : Epoch 122 of 170 | Avg_loss: 0.61 | Acc_train: 81.22  |  training eplase: 3.23 min
+INFO: 2022-12-18 01:31:02,201 : Epoch 123 of 170 | Avg_loss: 0.60 | Acc_train: 81.32  |  training eplase: 3.24 min
+INFO: 2022-12-18 01:34:17,089 : Epoch 124 of 170 | Avg_loss: 0.60 | Acc_train: 81.35  |  training eplase: 3.25 min
+INFO: 2022-12-18 01:37:31,805 : Epoch 125 of 170 | Avg_loss: 0.60 | Acc_train: 81.41  |  training eplase: 3.25 min
+INFO: 2022-12-18 01:40:46,544 : Epoch 126 of 170 | Avg_loss: 0.60 | Acc_train: 81.54  |  training eplase: 3.25 min
+INFO: 2022-12-18 01:44:01,847 : Epoch 127 of 170 | Avg_loss: 0.60 | Acc_train: 81.76  |  training eplase: 3.26 min
+INFO: 2022-12-18 01:47:16,673 : Epoch 128 of 170 | Avg_loss: 0.60 | Acc_train: 81.23  |  training eplase: 3.25 min
+INFO: 2022-12-18 01:50:31,420 : Epoch 129 of 170 | Avg_loss: 0.60 | Acc_train: 81.64  |  training eplase: 3.25 min
+INFO: 2022-12-18 01:53:46,102 : Epoch 130 of 170 | Avg_loss: 0.60 | Acc_train: 81.40  |  training eplase: 3.24 min
+INFO: 2022-12-18 01:57:42,025 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 01:57:42,025 : meta_val acc: 65.93 +- 0.65 |  best meta_val acc :65.93 +- 0.65  |  elapse: 3.93 min
+INFO: 2022-12-18 01:57:42,025 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 02:01:36,706 : meta_test acc: 63.59 +- 0.64   elapse: 3.91 min
+INFO: 2022-12-18 02:01:36,706 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 02:04:51,403 : Epoch 131 of 170 | Avg_loss: 0.60 | Acc_train: 81.77  |  training eplase: 3.24 min
+INFO: 2022-12-18 02:08:05,476 : Epoch 132 of 170 | Avg_loss: 0.60 | Acc_train: 81.63  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:11:19,437 : Epoch 133 of 170 | Avg_loss: 0.60 | Acc_train: 81.45  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:14:33,464 : Epoch 134 of 170 | Avg_loss: 0.59 | Acc_train: 82.16  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:17:47,483 : Epoch 135 of 170 | Avg_loss: 0.60 | Acc_train: 81.49  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:21:01,475 : Epoch 136 of 170 | Avg_loss: 0.59 | Acc_train: 81.97  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:24:16,133 : Epoch 137 of 170 | Avg_loss: 0.59 | Acc_train: 81.85  |  training eplase: 3.24 min
+INFO: 2022-12-18 02:27:30,094 : Epoch 138 of 170 | Avg_loss: 0.59 | Acc_train: 81.75  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:30:44,057 : Epoch 139 of 170 | Avg_loss: 0.59 | Acc_train: 82.13  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:33:57,926 : Epoch 140 of 170 | Avg_loss: 0.59 | Acc_train: 82.00  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:37:53,154 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 02:37:53,154 : meta_val acc: 66.36 +- 0.65 |  best meta_val acc :66.36 +- 0.65  |  elapse: 3.92 min
+INFO: 2022-12-18 02:37:53,154 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 02:41:47,892 : meta_test acc: 63.17 +- 0.65   elapse: 3.91 min
+INFO: 2022-12-18 02:41:47,892 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 02:45:02,490 : Epoch 141 of 170 | Avg_loss: 0.59 | Acc_train: 82.08  |  training eplase: 3.24 min
+INFO: 2022-12-18 02:48:16,457 : Epoch 142 of 170 | Avg_loss: 0.59 | Acc_train: 82.24  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:51:30,340 : Epoch 143 of 170 | Avg_loss: 0.59 | Acc_train: 81.91  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:54:44,211 : Epoch 144 of 170 | Avg_loss: 0.59 | Acc_train: 81.85  |  training eplase: 3.23 min
+INFO: 2022-12-18 02:57:58,107 : Epoch 145 of 170 | Avg_loss: 0.59 | Acc_train: 82.09  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:01:12,096 : Epoch 146 of 170 | Avg_loss: 0.59 | Acc_train: 81.83  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:04:26,853 : Epoch 147 of 170 | Avg_loss: 0.59 | Acc_train: 82.19  |  training eplase: 3.25 min
+INFO: 2022-12-18 03:07:40,874 : Epoch 148 of 170 | Avg_loss: 0.59 | Acc_train: 82.02  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:10:54,923 : Epoch 149 of 170 | Avg_loss: 0.59 | Acc_train: 82.18  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:14:08,736 : Epoch 150 of 170 | Avg_loss: 0.52 | Acc_train: 85.87  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:18:03,722 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 03:18:03,722 : meta_val acc: 67.14 +- 0.66 |  best meta_val acc :67.14 +- 0.66  |  elapse: 3.92 min
+INFO: 2022-12-18 03:18:03,722 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 03:21:58,231 : meta_test acc: 64.44 +- 0.63   elapse: 3.91 min
+INFO: 2022-12-18 03:21:58,231 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 03:25:13,006 : Epoch 151 of 170 | Avg_loss: 0.49 | Acc_train: 87.53  |  training eplase: 3.25 min
+INFO: 2022-12-18 03:28:27,022 : Epoch 152 of 170 | Avg_loss: 0.48 | Acc_train: 88.02  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:31:41,192 : Epoch 153 of 170 | Avg_loss: 0.47 | Acc_train: 88.49  |  training eplase: 3.24 min
+INFO: 2022-12-18 03:34:55,386 : Epoch 154 of 170 | Avg_loss: 0.47 | Acc_train: 88.38  |  training eplase: 3.24 min
+INFO: 2022-12-18 03:38:09,463 : Epoch 155 of 170 | Avg_loss: 0.46 | Acc_train: 88.77  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:41:23,408 : Epoch 156 of 170 | Avg_loss: 0.46 | Acc_train: 88.99  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:44:37,941 : Epoch 157 of 170 | Avg_loss: 0.45 | Acc_train: 89.12  |  training eplase: 3.24 min
+INFO: 2022-12-18 03:47:51,869 : Epoch 158 of 170 | Avg_loss: 0.45 | Acc_train: 89.20  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:51:05,812 : Epoch 159 of 170 | Avg_loss: 0.45 | Acc_train: 89.32  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:54:19,763 : Epoch 160 of 170 | Avg_loss: 0.45 | Acc_train: 89.65  |  training eplase: 3.23 min
+INFO: 2022-12-18 03:58:14,667 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 03:58:14,667 : meta_val acc: 67.47 +- 0.66 |  best meta_val acc :67.47 +- 0.66  |  elapse: 3.92 min
+INFO: 2022-12-18 03:58:14,667 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 04:02:09,596 : meta_test acc: 64.13 +- 0.63   elapse: 3.92 min
+INFO: 2022-12-18 04:02:09,596 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INFO: 2022-12-18 04:05:24,344 : Epoch 161 of 170 | Avg_loss: 0.45 | Acc_train: 89.48  |  training eplase: 3.25 min
+INFO: 2022-12-18 04:08:38,451 : Epoch 162 of 170 | Avg_loss: 0.44 | Acc_train: 89.92  |  training eplase: 3.24 min
+INFO: 2022-12-18 04:11:52,490 : Epoch 163 of 170 | Avg_loss: 0.44 | Acc_train: 89.97  |  training eplase: 3.23 min
+INFO: 2022-12-18 04:15:06,589 : Epoch 164 of 170 | Avg_loss: 0.44 | Acc_train: 89.67  |  training eplase: 3.23 min
+INFO: 2022-12-18 04:18:20,711 : Epoch 165 of 170 | Avg_loss: 0.44 | Acc_train: 90.02  |  training eplase: 3.24 min
+INFO: 2022-12-18 04:21:34,897 : Epoch 166 of 170 | Avg_loss: 0.44 | Acc_train: 89.79  |  training eplase: 3.24 min
+INFO: 2022-12-18 04:24:49,641 : Epoch 167 of 170 | Avg_loss: 0.43 | Acc_train: 90.17  |  training eplase: 3.25 min
+INFO: 2022-12-18 04:28:03,574 : Epoch 168 of 170 | Avg_loss: 0.43 | Acc_train: 90.44  |  training eplase: 3.23 min
+INFO: 2022-12-18 04:31:17,653 : Epoch 169 of 170 | Avg_loss: 0.44 | Acc_train: 90.14  |  training eplase: 3.23 min
+INFO: 2022-12-18 04:35:12,672 : meta_test acc: 63.72 +- 0.62   elapse: 3.92 min
+INFO: 2022-12-18 04:35:12,672 : --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
