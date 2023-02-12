@@ -157,10 +157,10 @@ class MetaImageNet(ImageNet):
                         image = self.train_transform(image_pil)
                         support_xs.append(image.unsqueeze(0))
                         support_ys.append(idx)
-                elif self.n_aug_support_samples == 1:
-                    image = self.test_transform(image_pil)
-                    support_xs.append(image.unsqueeze(0))
-                    support_ys.append(idx)
+                # elif self.n_aug_support_samples == 1:
+                #     image = self.test_transform(image_pil)
+                #     support_xs.append(image.unsqueeze(0))
+                #     support_ys.append(idx)
             query_xs_ids = np.setxor1d(samples_cls, support_xs_ids_sampled)
             query_xs_ids = np.random.choice(query_xs_ids, self.n_queries, False)
             for sample_id in query_xs_ids:

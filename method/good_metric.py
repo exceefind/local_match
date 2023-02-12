@@ -15,8 +15,8 @@ import torch.nn as nn
 import torch
 import scipy
 from scipy.stats import t
-from model.resnet_new import ResNet12 as resnet12
-from model.resnet_new import *
+from model.resnet_new1 import ResNet12 as resnet12
+from model.resnet_new1 import *
 from .DN4_module import ImgtoClass_Metric
 # from model.resnet12 import resnet12
 from model.ADL import ADL,ADL_variant,ADL_sig

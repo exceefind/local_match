@@ -6,7 +6,9 @@ import torch.optim as optim
 import torch.nn as nn
 import tqdm
 from torch.utils.data import DataLoader
-from data_load.DataSets.MiniImageNet import *
+# from data_load.DataSets.MiniImageNet import *
+from data_load.DataSets.MiniImageNet_BDC import *
+
 from data_load.DataSets.CUB import *
 from data_load.DataSets.TieredImageNet import *
 from data_load.DataSets.skin_198 import *

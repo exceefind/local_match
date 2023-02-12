@@ -9,7 +9,9 @@ import time
 import os
 import argparse
 from torch.utils.data import DataLoader
-from data_load.DataSets.MiniImageNet import *
+# from data_load.DataSets.MiniImageNet import *
+from data_load.DataSets.MiniImageNet_BDC import *
+
 from data_load.DataSets.CUB import *
 from data_load.DataSets.TieredImageNet import *
 # from method.Few_rec import Net_rec
@@ -76,6 +78,7 @@ def train_distill(args, train_loader, meta_valloader, model, model_t):
 
     best_acc = 0.0
     best_confidence = 0.0
+    # model_t.eval()
     for epoch in range(args.max_epoch):
         model.train()
         tic = time.time()

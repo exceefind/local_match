@@ -6,8 +6,12 @@ import torch.optim as optim
 import torch.nn as nn
 import tqdm
 from torch.utils.data import DataLoader
-from data_load.DataSets.MiniImageNet import *
-from data_load.DataSets.CUB import *
+# from data_load.DataSets.MiniImageNet import *
+from data_load.DataSets.MiniImageNet_BDC import *
+from utils.utils import load_model, set_seed
+
+# from data_load.DataSets.CUB import *
+from data_load.DataSets.CUB_json import *
 from data_load.DataSets.TieredImageNet import *
 from data_load.DataSets.skin_198 import *
 from method.Confusion import ConfuNet
@@ -50,7 +54,7 @@ def parse_option():
     # about meta test
     parser.add_argument('--val_freq',default=5,type=int)
     parser.add_argument('--local_mode',default='local_mix', choices=['cell', 'local_mix' ,'cell_mix','mask_pool'])
-    parser.add_argument('--set', type=str, default='val', choices=['val', 'test'], help='the set for validation')
+    parser.add_argument('--set', type=str, default='test', choices=['val', 'test'], help='the set for validation')
     parser.add_argument('--n_way', type=int, default=5)
     parser.add_argument('--n_shot', type=int, default=1)
     parser.add_argument('--n_aug_support_samples',type=int, default=1)
@@ -115,6 +119,9 @@ def parse_option():
     parser.add_argument('--embeding_way', default='BDC', choices=['BDC','GE'])
     parser.add_argument('--wd_test', type=float, default=5e-4)
     parser.add_argument('--LR', default=False,action='store_true')
+    parser.add_argument('--lr', default=0.01, type=float)
+    parser.add_argument('--optim', default='Adam',choices=['Adam', 'SGD'])
+    parser.add_argument('--my_model', default=False,action='store_true')
 
 
     args = parser.parse_args()
@@ -141,20 +148,22 @@ def main():
     args = parse_option()
     if args.img_size == 224 and args.transform == 'B':
         args.transform = 'B224'
-    if args.transform == 'B':
-        args.transform = 'B_ws'
+    # if args.transform == 'B':
+    #     args.transform = 'B_s'
     pprint(args)
     if args.gpu:
         gpu_device = str(args.gpu)
     else:
         gpu_device = "0"
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_device
+    set_seed(args.seed)
+
 
     if args.dataset == 'miniimagenet':
         train_trans, test_trans = transforms_options[args.transform]
         # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
         val_sup_trans =  train_trans
-        meta_test_loader = DataLoader(MetaImageNet(args=args, partition='test',
+        meta_test_loader = DataLoader(MetaImageNet(args=args, partition=args.set,
                                                  train_transform=val_sup_trans,
                                                  test_transform=test_trans),
                                     batch_size=args.test_batch_size, shuffle=False, drop_last=False,
@@ -164,7 +173,7 @@ def main():
         train_trans, test_trans = transforms_options[args.transform]
         # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
         val_sup_trans =  train_trans
-        meta_test_loader = DataLoader(MetaCUB(args=args, partition='test',
+        meta_test_loader = DataLoader(MetaCUB(args=args, partition=args.set,
                                                    train_transform=val_sup_trans,
                                                    test_transform=test_trans),
                                       batch_size=args.test_batch_size, shuffle=False, drop_last=False,
@@ -176,7 +185,7 @@ def main():
         train_trans, test_trans = transforms_options[args.transform]
         # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
         val_sup_trans =  train_trans
-        meta_test_loader = DataLoader(MetaTierdImageNet(args=args, partition='test',
+        meta_test_loader = DataLoader(MetaTierdImageNet(args=args, partition=args.set,
                                               train_transform=val_sup_trans,
                                               test_transform=test_trans),
                                       batch_size=args.test_batch_size, shuffle=False, drop_last=False,
@@ -186,7 +195,7 @@ def main():
         train_trans, test_trans = transforms_options[args.transform]
         # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
         val_sup_trans =  train_trans
-        meta_test_loader = DataLoader(MetaSkin(args=args, partition='test',
+        meta_test_loader = DataLoader(MetaSkin(args=args, partition=args.set,
                                                    train_transform=val_sup_trans,
                                                    test_transform=test_trans),
                                       batch_size=args.test_batch_size, shuffle=False, drop_last=False,
@@ -208,7 +217,10 @@ def main():
         assert model != None
 
     if args.continue_pretrain:
-        model = model_load(args,model)
+        if args.my_model :
+            model = model_load(args,model)
+        else:
+            model = load_model(model,os.path.join(args.save_dir,args.distill_model))
 
     print("-"*20+"  start meta test...  "+"-"*20)
     model.eval()

@@ -76,7 +76,9 @@ transform_B = [
 
 transform_B_s = [
     transforms.Compose([
-            transforms.RandomResizedCrop(img_size,scale=(0.3,0.7)),
+            # transforms.Resize([resize_size, resize_size]),
+            # transforms.RandomCrop(img_size,padding=2),
+            transforms.RandomResizedCrop(img_size,scale=(0.2,0.8)),
             # transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
@@ -180,13 +182,13 @@ transform_D = [
     ])
 ]
 
-transforms_list = ['A', 'B', 'B2', 'C', 'D']
+transforms_list = ['A', 'B','B_s', 'B2', 'C', 'D']
 
 transforms_options = {
     'A': transform_A,
     'B': transform_B,
     'B224':transform_B224,
-    'B_ws':transform_B_s,
+    'B_s':transform_B_s,
     'B2':transform_B2,
     'C': transform_C,
     'D': transform_D,

@@ -11,8 +11,8 @@ import torch.nn as nn
 import torch
 import scipy
 from scipy.stats import t
-from model.resnet_new import ResNet12 as resnet12
-from model.resnet_new import *
+from model.resnet_new1 import ResNet12 as resnet12
+from model.resnet_new1 import *
 from model.ADL import ADL,ADL_variant,ADL_sig
 from torch.nn.utils.weight_norm import WeightNorm
 from utils.loss import entropy_loss
@@ -34,6 +34,8 @@ def mean_confidence_interval(data, confidence=0.95,multi = 1):
 
 def random_sample(linspace, max_idx, num_sample=5):
     sample_idx = np.random.choice(range(linspace), num_sample)
+    # sample_idx = np.array(random.sample(range(linspace), num_sample))
+
     # print(sample_idx)
     # print(len(list(range(0, max_idx, linspace))))
     # print(np.sort(random.sample(list(np.linspace(0, max_idx, max_idx//num_sample ,endpoint=False,dtype=int)),num_sample)))
@@ -48,6 +50,9 @@ class stl_deepbdc(nn.Module):
         elif params.model == 'resnet18':
             self.backbone = ResNet18()
         reduce_dim = 128
+        if not params.my_model :
+            self.feature = self.backbone
+        # self.feature = self.backbone
         self.feat_dim = self.backbone.feat_dim
         self.reduce_dim = reduce_dim
         self.dim = int(reduce_dim * (reduce_dim+1)/2)
@@ -134,7 +139,7 @@ class stl_deepbdc(nn.Module):
     def meta_test_loop(self,test_loader):
 
         acc = []
-        classifier = 'emd' if not self.params.test_LR else 'LR'
+        # classifier = 'emd' if not self.params.test_LR else 'LR'
         for i, data in enumerate(test_loader):
             tic = time.time()
             support_xs, support_ys, query_xs, query_ys = data
@@ -229,11 +234,13 @@ class stl_deepbdc(nn.Module):
                  max_iter=1000,
                  multi_class='multinomial')
         spt_norm = torch.norm(support_z, p=2, dim=1).unsqueeze(1).expand_as(support_z)
-        spt_normalized = support_z.div(spt_norm)
+        spt_normalized = support_z.div(spt_norm + 1e-6)
         z_support = spt_normalized.detach().cpu().numpy()
+
         y_support = support_ys.view(-1).cpu().numpy()
+
         qry_norm = torch.norm(query_z, p=2, dim=1).unsqueeze(1).expand_as(query_z)
-        qry_normalized = query_z.div(qry_norm)
+        qry_normalized = query_z.div(qry_norm + 1e-6)
         z_query = qry_normalized.detach().cpu().numpy()
         clf.fit(z_support, y_support)
 

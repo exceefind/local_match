@@ -66,7 +66,7 @@ class MetaTierdImageNet(TieredImageNet):
         self.n_shots = args.n_shot
         self.n_queries = args.n_queries
         self.n_episodes = args.n_episodes
-        self.n_aug_support_samples = args.n_aug_support_samples if not args.prompt else args.n_aug_support_samples - 1
+        self.n_aug_support_samples = args.n_aug_support_samples
         self.args = args
         self.image_size = image_size
         self.n_sym_aug = args.n_symmetry_aug
@@ -110,15 +110,16 @@ class MetaTierdImageNet(TieredImageNet):
         self.num_classes = len(set(label))
 
     def __getitem__(self, item):
-        # if self.fix_seed:
-        #     np.random.seed(item)
+        if self.fix_seed:
+            np.random.seed(item)
         cls_sampled = np.random.choice(range(self.num_classes), self.n_ways, False)
         # print(cls_sampled)
         support_xs, support_ys, query_xs, query_ys = [], [], [], []
         # sample_record = []
+        # print(cls_sampled)
         for idx, cls in enumerate(cls_sampled):
             # all idx of cls
-            samples_cls = np.where(np.array(self.label)==cls)[0]
+            samples_cls = np.where(np.array(self.label) == cls)[0]
             support_xs_ids_sampled = np.random.choice(samples_cls, self.n_shots, False)
             for sample_id in support_xs_ids_sampled:
                 # sample_record.append((self.data[sample_id]).split('\\\\')[-1])
@@ -128,22 +129,27 @@ class MetaTierdImageNet(TieredImageNet):
                     # image = self.train_transform(image_pil)
                     support_xs.append(image.unsqueeze(0))
                     support_ys.append(idx)
+                else:
+                    image = self.test_transform(image_pil)
+                    # image = self.train_transform(image_pil)
+                    support_xs.append(image.unsqueeze(0))
+                    support_ys.append(idx)
                 if self.n_aug_support_samples > 1:
-                    for i in range(self.n_aug_support_samples-1):
+                    for i in range(self.n_aug_support_samples - 1):
                         # print('---------------')
                         image = self.train_transform(image_pil)
                         support_xs.append(image.unsqueeze(0))
                         support_ys.append(idx)
-                elif self.n_aug_support_samples == 1:
-                    image = self.test_transform(image_pil)
-                    support_xs.append(image.unsqueeze(0))
-                    support_ys.append(idx)
+                # elif self.n_aug_support_samples == 1:
+                #     image = self.test_transform(image_pil)
+                #     support_xs.append(image.unsqueeze(0))
+                #     support_ys.append(idx)
             query_xs_ids = np.setxor1d(samples_cls, support_xs_ids_sampled)
             query_xs_ids = np.random.choice(query_xs_ids, self.n_queries, False)
             for sample_id in query_xs_ids:
                 # sample_record.append(self.data[sample_id])
 
-                if self.n_sym_aug > 1 :
+                if self.n_sym_aug > 1:
                     image_pil = Image.open(self.data[sample_id]).convert('RGB')
                     if self.args.prompt:
                         image = self.test_transform(image_pil)
@@ -151,7 +157,7 @@ class MetaTierdImageNet(TieredImageNet):
                         query_xs.append(image.unsqueeze(0))
                         query_ys.append(idx)
                     if self.n_sym_aug > 1:
-                        for i in range(self.n_sym_aug-1):
+                        for i in range(self.n_sym_aug - 1):
                             image = self.train_transform(image_pil)
                             query_xs.append(image.unsqueeze(0))
                             query_ys.append(idx)
@@ -160,11 +166,10 @@ class MetaTierdImageNet(TieredImageNet):
                     query_xs.append(image.unsqueeze(0))
                     query_ys.append(idx)
         # print(sample_record,end='\r')
-        support_xs = torch.cat(support_xs,dim=0)
+        support_xs = torch.cat(support_xs, dim=0)
         support_ys = torch.tensor(support_ys)
-        query_xs = torch.cat(query_xs,dim=0)
+        query_xs = torch.cat(query_xs, dim=0)
         query_ys = torch.tensor(query_ys)
-
         return support_xs, support_ys, query_xs, query_ys
 
     def __len__(self):

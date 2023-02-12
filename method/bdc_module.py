@@ -55,7 +55,7 @@ class BDC(nn.Module):
     
     def forward(self, x):
         if self.dr is not None and self.dr != self.input_dim:
-            print('---------------')
+            # print('---------------')
             x = self.conv_dr_block(x)
         x = BDCovpool(x, self.temperature)
         if self.is_vec:

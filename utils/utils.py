@@ -20,3 +20,14 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+def load_model(model, dir):
+    model_dict = model.state_dict()
+    file_dict = torch.load(dir)['state']
+    for k, v in file_dict.items():
+        if k not in model_dict:
+            print(k)
+    file_dict = {k: v for k, v in file_dict.items() if k in model_dict}
+    model_dict.update(file_dict)
+    model.load_state_dict(model_dict)
+    return model

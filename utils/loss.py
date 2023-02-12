@@ -48,10 +48,30 @@ def uniformity_loss(feat, const_feat,label=None,temp=0.5):
 
         # print(torch.sum(sim_b[idx],dim=-1))
     else:
-        p = sim_a / (sim_tot-sim_a)
+        p = sim_a / sim_tot
     # print(p)
     loss = torch.mean(-torch.log(p+1e-8))
     return loss
+
+def Distance_Correlation(latent, control):
+    latent = F.normalize(latent)
+    control = F.normalize(control)
+
+    matrix_a = torch.sqrt(torch.sum(torch.square(latent.unsqueeze(0) - latent.unsqueeze(1)), dim=-1) + 1e-12)
+    matrix_b = torch.sqrt(torch.sum(torch.square(control.unsqueeze(0) - control.unsqueeze(1)), dim=-1) + 1e-12)
+
+    matrix_A = matrix_a - torch.mean(matrix_a, dim=0, keepdims=True) - torch.mean(matrix_a, dim=1,
+                                                                                  keepdims=True) + torch.mean(matrix_a)
+    matrix_B = matrix_b - torch.mean(matrix_b, dim=0, keepdims=True) - torch.mean(matrix_b, dim=1,
+                                                                                  keepdims=True) + torch.mean(matrix_b)
+
+    Gamma_XY = torch.sum(matrix_A * matrix_B) / (matrix_A.shape[0] * matrix_A.shape[1])
+    Gamma_XX = torch.sum(matrix_A * matrix_A) / (matrix_A.shape[0] * matrix_A.shape[1])
+    Gamma_YY = torch.sum(matrix_B * matrix_B) / (matrix_A.shape[0] * matrix_A.shape[1])
+
+    correlation_r = Gamma_XY / torch.sqrt(Gamma_XX * Gamma_YY + 1e-9)
+    # correlation_r = torch.pow(Gamma_XY,2)/(Gamma_XX * Gamma_YY + 1e-9)
+    return correlation_r
 
 def area_loss(out,gama=0.5):
     # print(out.shape)
@@ -195,6 +215,7 @@ def prototypical_Loss(feat_out,lab,prototypes,epoch,center=False,temperature = 1
 if __name__ == '__main__':
     # exp = torch.rand((3,5,5))
     # print(area_loss(torch.sigmoid(exp)))
-    feat = torch.rand((64, 2048))
-    feat_cons = torch.rand((64,2048))
-    print(uniformity_loss(feat,feat_cons))
+    feat = torch.rand((5, 640,100))
+    feat_cons = torch.rand((5,640,100))
+    print(Distance_Correlation(feat,feat_cons))
+    # print(uniformity_loss(feat,feat_cons))

@@ -1,4 +1,4 @@
-gpuid=4
+gpuid=0
 
 cd ../../
 
@@ -13,7 +13,7 @@ cd ../../
 ##
 
 
-python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 1000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 1 --n_shot 1  --n_symmetry_aug 1 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-4 --distill_model cub_confusion_resnet12_distill_21_12_gen_last.pth --penalty_c 20. --prompt --LR
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 1000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 1 --n_shot 1  --n_symmetry_aug 1 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-4 --distill_model cub_confusion_resnet12_distill_21_12_gen_last.pth --penalty_c 20. --prompt --LR
 #
 #python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 1000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-4 --distill_model cub_confusion_resnet12_distill_21_4_gen_last.pth --penalty_c 20. --prompt
 
@@ -29,4 +29,18 @@ python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform 
 #
 #python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 1000 --model_id 10 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5 --model_type last --prompt --embeding_way GE
 
+
+#86.09
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 1 --n_shot 1  --n_symmetry_aug 1 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-4 --distill_model ResNet18_stl_deepbdc_distill_cub/last_model.tar  --penalty_c 20. --prompt --LR --test_times 1
+#
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 1 --n_shot 5  --n_symmetry_aug 1 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-4 --distill_model ResNet18_stl_deepbdc_distill_cub/last_model.tar  --penalty_c 20. --prompt --LR --test_times 1
+
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 1000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-4 --distill_model ResNet18_stl_deepbdc_distill_cub/last_model.tar --penalty_c 20. --prompt  --optim SGD --lr 0.1
+
+#new
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-3 --distill_model ResNet18_stl_deepbdc_distill_cub/last_model.tar --penalty_c 20. --prompt  --optim SGD --lr 0.1 --test_times 1
+python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-3 --distill_model ResNet18_stl_deepbdc_distill_cub/last_model.tar --penalty_c 20. --prompt --optim SGD --lr 0.1 --test_times 1
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 1000 --model_id 21 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5 --model_type last  --dataset cub --model resnet18 --img_size 224 --wd_test 1e-3 --distill_model ResNet18_stl_deepbdc_distill_cub/last_model.tar --penalty_c 20. --prompt --optim SGD --lr 0.1
 
