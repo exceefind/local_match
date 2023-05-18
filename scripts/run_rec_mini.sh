@@ -1,6 +1,24 @@
-gpuid=0
+gpuid=2
 
 cd ../
+
+#采用LR
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 10 --n_shot 1  --n_symmetry_aug 10  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s --LR_rec  --penalty_c 0.1
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 10 --n_shot 1  --n_symmetry_aug 10  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s --LR_rec  --penalty_c 1.
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5 --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 3 --optim SGD --lr 0.5 --transform B_s --LR_rec  --penalty_c 2.
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 3 --optim SGD --lr 0.5 --transform B_s --LR_rec  --penalty_c 1.
+
+
+
+
+#68.57
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 10 --n_shot 1  --n_symmetry_aug 10  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s
+#86
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 10 --n_shot 5  --n_symmetry_aug 10  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B_s
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 10 --n_shot 1  --n_symmetry_aug 10  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim Adam --lr 0.001 --transform B_s
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 10 --n_shot 5  --n_symmetry_aug 10  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim Adam --lr 0.001 --transform B_s
 
 
 #python train_pretrain.py --gpu 0 --MultiStepLr --lr 0.05 --max_epoch 170 --val_freq 1 --test_LR --transform B --n_episodes 1000 --model_id 1 --method confusion --batch_size 64 --reduce_dim 128 --drop_rate 0.5 --milestones 100 150  --n_aug_support_samples 5  --penalty_c .1 --t_lr 1e-3 --num_workers 4 --idea_variant  --gama 0.1 --n_shot 1  --confusion --prompt --test --LR
@@ -103,11 +121,46 @@ cd ../
 #86.22
 #python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 200 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 1.
 #86.27
-python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 1.
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 1.
 #86.23
 #python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 200 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.0005 --test_times 1 --optim SGD --lr 10.
 
 #python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 200 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.001 --test_times 1 --optim SGD --lr 10.
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 1. --penalty_c 1. --LR_rec
+
+#86.02
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 1. --transform B_s
+#76.53
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.01 --test_times 1 --optim SGD --lr 0.1 --transform B_s
+
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 1 --transform B_s
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 5 --optim SGD --lr 0.5 --transform B_s
+#86.22
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B_s
+#86.16
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.001 --test_times 1 --optim SGD --lr 0.5 --transform B_s
+
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s
+
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 2000 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 1. --transform B
+
+
+python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 0
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 1
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 2
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 1  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.1 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 3
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 0
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 1
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 2
+#python eval.py --gpu ${gpuid}  --continue_pretrain --reduce_dim 128 --transform B --n_episodes 100 --model_id 1 --method confusion  --idea_variant  --n_aug_support_samples 5 --n_shot 5  --n_symmetry_aug 5  --prompt --distill_model  ResNet12_stl_deepbdc_distill/last_model.tar --wd_test 0.005 --test_times 1 --optim SGD --lr 0.5 --transform B_s --Loss_ablation 3
+#
 
 
 

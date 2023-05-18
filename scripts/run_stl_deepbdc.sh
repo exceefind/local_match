@@ -1,4 +1,4 @@
-gpuid=0
+gpuid=7
 cd ../
 
 #model 2: 采用BDC 的mini dataset

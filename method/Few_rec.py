@@ -17,6 +17,7 @@ import scipy
 from scipy.stats import t
 from model.resnet_new1 import ResNet12 as resnet12
 from model.resnet_new1 import *
+from model.convnet import *
 # from .DN4_module import *
 import random
 from utils.loss import *
@@ -24,6 +25,7 @@ from sklearn.linear_model import LogisticRegression as LR
 # torch.autograd.set_detect_anomaly(True)
 from utils.distillation_utils import *
 import math
+from torch.nn.utils.weight_norm import WeightNorm
 from utils.loss import uniformity_loss
 from collections import Counter
 
@@ -122,17 +124,18 @@ def Diagvec(x):
     return y
 
 class reconstruct_layer(nn.Module):
-    def __init__(self, in_channels = 128, out_channels=128, p_des=0.2, p_drop = 0.6,skip_connect=True):
+    def __init__(self, in_channels = 128, out_channels=128, p_des=0.2, p_drop = 0.5,skip_connect=True):
         super(reconstruct_layer, self).__init__()
+        # init : p_des = 0.2 p_drop=0.6
         # self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1,padding=1, bias=False)
-        # self.conv_soft = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, bias=False)
-        self.conv_soft = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1,  bias=False)
+        # self.conv_soft = nn.Conv2d(in_channels, in_channels, kernel_size=2, stride=1, padding=1, bias=False)
+        # self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, bias=False)
+        self.conv_soft = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1,  bias=True)
         self.conv_rec = nn.Sequential(
 
-            # nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1, bias=False),
-            # nn.BatchNorm2d(in_channels),
-            # nn.ReLU(inplace=True),
+            # nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm2d(in_channels),
+            nn.ReLU(inplace=True),
 
         )
         self.skip_connect = skip_connect
@@ -142,34 +145,86 @@ class reconstruct_layer(nn.Module):
         # ge:
         # p_des = 0.5
         # p_drop = 0.9
-        self.drop_des2 = nn.Dropout2d(0.2)
+        # drop2d : 0.5对大多任务效果好
+        self.drop_des2 = nn.Dropout2d(p_des)
         self.drop_des = nn.Dropout(p_des)
         self.p_drop = p_drop
+        self.scale = torch.nn.Parameter(torch.ones(in_channels),requires_grad=True)
+    #     初始化权重：
+    #     print(self.conv_soft.weight.data.shape)
+    #     self.conv_soft.weight.data[:,:,0,0] = torch.eye(in_channels)
 
     def forward(self, x):
         mask = torch.ones((x.shape[0], x.shape[1])).to(x.device)
-        if random.random() <= self.p_drop:
-            # map_mask = (self.drop_des(mask)/(mask)).unsqueeze(-1).unsqueeze(-1).expand_as(x)
-            map_mask = (self.drop_des(mask)).unsqueeze(-1).unsqueeze(-1).expand_as(x)
-
-        else:
-            map_mask = mask.unsqueeze(-1).unsqueeze(-1).expand_as(x)
+        # if random.random() <= self.p_drop:
+        #     # map_mask = (self.drop_des(mask)/(mask)).unsqueeze(-1).unsqueeze(-1).expand_as(x)
+        #     map_mask = (self.drop_des(mask)).unsqueeze(-1).unsqueeze(-1).expand_as(x)
+        #
+        # else:
+        #     map_mask = mask.unsqueeze(-1).unsqueeze(-1).expand_as(x)
         # print(self.conv.weight.shape)
         # map_mask = self.drop_des2(mask)
-        # self.conv_soft.weight.data = F.softmax(self.conv.weight.data,dim=1)
-        self.conv_soft.weight.data = F.sigmoid(self.conv.weight.data,)
+        w_soft = F.softmax(self.conv_soft.weight.data)
+        # w_soft = F.sigmoid(self.conv_soft.weight.data)
+        # w_soft = self.conv_soft.weight.data
+        # w_soft = w_soft.clamp(0,1)
+
+        # w_soft = self.conv_soft.weight.data
+        # w_soft_nrom = torch.norm(w_soft, p=2, dim=1).unsqueeze(1).expand_as(w_soft)
+        # w_soft = w_soft.div(w_soft_nrom + 1e-9)
+        self.conv_soft.weight.data = w_soft
+
+        # self.conv_soft.weight.data = F.sigmoid(self.conv.weight.data,)
         # self.conv_soft.weight.data.clamp_(-.5,.5)
-        x_mask = x*map_mask
-        # x_mask = self.drop_des2(x)
+        # x_mask = x*map_mask
+        x_mask = self.drop_des2(x)
         out = self.conv_soft(x_mask)
-        out = self.conv_rec(out)
+        # out = self.conv_rec(out)
         if self.skip_connect:
+            self.scale.data.clamp_(0.5,2)
             out = torch.cat([out.unsqueeze(-1), x.unsqueeze(-1)],dim=-1)
+            # print(out.shape)
             # return out
             # return torch.max(out,dim=-1)[0]
-            return torch.sum(out,dim=-1)
+            # return torch.sum(out, dim=-1)
+            out = torch.mean(out,dim=-1)
+            # out = self.conv_rec(out)
+            return out
+            # return torch.mean(out, dim=-1) * self.scale.unsqueeze(0).unsqueeze(-1).unsqueeze(-1).expand_as(x)
+
+
         else:
             return out
+
+class fusion_module(nn.Module):
+    def __init__(self,in_channels=2,out_channels=1,dim=8256):
+        super(fusion_module, self).__init__()
+        self.conv =  nn.Conv1d(in_channels, out_channels, kernel_size=1, stride=1, bias=False)
+        self.conv_soft =  nn.Conv1d(in_channels, out_channels, kernel_size=1, stride=1, bias=False)
+        self.fusion = nn.Sequential(
+            # nn.BatchNorm1d(out_channels),
+            # nn.ReLU(inplace=True),
+
+        )
+        self.weight =  torch.nn.Parameter(torch.randn(dim),requires_grad=True)
+
+    def _init_weight(self, modules):
+        for m in modules:
+            if isinstance(m, nn.Conv1d):
+                nn.init.uniform_(m.weight, a=0, b=1)
+                # nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out', nonlinearity='leaky_relu')
+
+
+    def forward(self,x):
+        # print(self.conv_soft.weight.data.shape)
+        # w_soft = F.softmax(self.conv.weight.data,dim=1)
+        # self.conv_soft.weight.data = w_soft
+        # x = self.conv_soft(x)
+        # print(x.shape)
+        weight = self.weight.unsqueeze(0).expand(x.shape[0],x.shape[-1])
+        x = F.sigmoid(weight) * x[:,0,:] + (1-F.sigmoid(weight)) * x[:,1,:]
+
+        return self.fusion(x)
 
 class Rec_Net(nn.Module):
     def __init__(self,reduce_dim=128):
@@ -217,13 +272,20 @@ class Net_rec(nn.Module):
         self.params = params
         self.out_map = False
         resnet_layer_dim = [64, 160, 320, 640]
-        self.resnet_layer_dim = resnet_layer_dim
+
         if params.model == 'resnet12':
             self.backbone = resnet12(avg_pool=True,num_classes=64)
         elif params.model == 'resnet18':
             self.backbone = ResNet18()
             resnet_layer_dim = [64, 128, 256, 512]
+        elif params.model == 'resnet34':
+            self.backbone = ResNet34(flatten=False)
+            resnet_layer_dim = [64, 128, 256, 512]
+        elif params.model == 'conv64':
+            self.backbone = ConvNet()
+            resnet_layer_dim = self.backbone.feat_dim
 
+        self.resnet_layer_dim = resnet_layer_dim
         # if params.metric == 'DN4':
         #     self.avg_pool = nn.AdaptiveAvgPool2d(3)
         #     self.imgtoclass = ImgtoClass_Metric(neighbor_k=1)
@@ -232,6 +294,8 @@ class Net_rec(nn.Module):
         self.reduce_dim = params.reduce_dim
         self.feat_dim = self.backbone.feat_dim
         self.dim = int(self.reduce_dim * (self.reduce_dim+1)/2)
+        # print(resnet_layer_dim[-1])
+        # print(self.reduce_dim)
         if resnet_layer_dim[-1] != self.reduce_dim:
             self.Conv = nn.Sequential(
                 nn.Conv2d(resnet_layer_dim[-1], self.reduce_dim, kernel_size=1, stride=1, bias=False),
@@ -244,6 +308,9 @@ class Net_rec(nn.Module):
         if self.params.embeding_way in ['BDC']:
             self.SFC = nn.Linear(self.dim, num_classes)
             self.SFC.bias.data.fill_(0)
+        elif self.params.embeding_way in ['baseline++']:
+            self.SFC = nn.Linear(self.reduce_dim, num_classes,bias=False)
+            WeightNorm.apply(self.SFC, 'weight', dim=0)
         else:
             self.SFC = nn.Linear(self.reduce_dim, num_classes)
 
@@ -336,10 +403,10 @@ class Net_rec(nn.Module):
 
     def forward_feature(self, x, confusion=False, out_map=False):
         feat_map = self.backbone(x, is_FPN=(self.params.FPN_list is not None))
+        # print(feat_map.shape)
         if self.resnet_layer_dim[-1] != self.reduce_dim:
-            # print('**************')
             feat_map = self.Conv(feat_map)
-        if self.params.LR:
+        if self.params.LR :
             if self.params.embeding_way in ['BDC'] :
                 out = self.dcov(feat_map)
             else:
@@ -386,7 +453,13 @@ class Net_rec(nn.Module):
         x = self.forward_feature(x,confusion=confusion,out_map=False)
 
         # x = self.comp_relation(x)
-        x = self.drop(x)
+        if self.params.embeding_way in ['baseline++']:
+            x = self.avg_pool(x)
+            x = x.view(x.shape[0], -1)
+            x_norm = torch.norm(x, p=2, dim=1).unsqueeze(1).expand_as(x)
+            x = x.div(x_norm + 0.00001)
+        else:
+            x = self.drop(x)
         return self.SFC(x)
 
     def train_loop(self,epoch,train_loader,optimizers):
@@ -524,7 +597,8 @@ class Net_rec(nn.Module):
             else:
                 with torch.enable_grad():
                     pred = self.softmax(feat_sup, support_ys, feat_qry,)
-                    _,pred = torch.max(pred,dim=-1)
+                    if not self.params.LR_rec:
+                        _,pred = torch.max(pred,dim=-1)
             if self.params.n_symmetry_aug > 1:
                 # pred = pred.view(-1, self.params.n_symmetry_aug)
                 query_ys = query_ys.view(-1, self.params.n_symmetry_aug)
@@ -591,80 +665,77 @@ class Net_rec(nn.Module):
         return avg_loss / iter_num, float(total_correct) / total * 100
 
 
+    def LR_rec(self,support_z,support_y):
+        clf = LR(penalty='l2',
+                 random_state=0,
+                 C=self.params.penalty_c,
+                 solver='lbfgs',
+                 max_iter=1000,
+                 multi_class='multinomial')
+        # spt_norm = torch.norm(support_z, p=2, dim=1).unsqueeze(1).expand_as(support_z)
+        # spt_normalized = support_z.div(spt_norm + 1e-6)
+
+        z_support = support_z.detach().cpu().numpy()
+        y_support = support_y.reshape(-1).cpu().numpy()
+
+        clf.fit(z_support, y_support)
+        return clf
 
     def softmax(self,support_z,support_ys,query_z,):
         # proto : K * D
-        # prototype = torch.zeros((self.params.n_way, self.dim)).cuda()
+        prototype = torch.zeros((self.params.n_way, self.dim)).cuda()
+        # prototype = torch.zeros((support_z.shape[0]//self.params.n_aug_support_samples, self.dim)).cuda()
         loss_ce_fn = nn.CrossEntropyLoss()
         lr_scheduler = None
-        # support_z = support_z.cpu().detach()
-        # query_z = query_z.cpu().detach()
-        # support_ys = support_ys.cpu().detach()
         support_ys = support_ys.cuda()
+        drop2 = nn.Dropout(0.3).cuda()
 
         if self.params.embeding_way in ['BDC']:
             rec_layer = reconstruct_layer().cuda()
             SFC = nn.Linear(self.dim, self.params.n_way).cuda()
-            # rec_layer = reconstruct_layer().cpu()
-            # SFC = nn.Linear(self.dim, self.params.n_way).cpu()
-            # self.dcov = self.dcov.cpu()
-            # SFC.bias.data.fill_(0)
-            # 1shot : 0.01 + wd:0.05
+            fusion =fusion_module(dim=self.dim).cuda()
             if self.params.optim in ['Adam']:
-                # lr = 5e-3
-                optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, weight_decay=self.params.wd_test)
-            # optimizer = torch.optim.Adam([{'params': SFC.parameters()}],lr=1e-3, weight_decay=5e-4)
-            #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,], gamma=0.5)
-                lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100,], gamma=0.1)
-                iter_num = 150
-
-                optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, weight_decay=self.params.wd_test)
+                optimizer = torch.optim.Adam([{'params':fusion.parameters()},{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, weight_decay=self.params.wd_test)
                 iter_num = 100
             else:
                 # best
-                optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, nesterov=True, weight_decay=self.params.wd_test)
-                # try:
-                optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, weight_decay=self.params.wd_test)
-
-                # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,120], gamma=0.2)
-                lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,160,240,360], gamma=0.1)
-                iter_num = 450
-
-                # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[180, 360, 540, 720],
-                #                                                     gamma=0.1)
-                # iter_num = 800
-
+                # optimizer = torch.optim.SGD([{'params':fusion.parameters(),'lr':self.params.lr},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9,  weight_decay=self.params.wd_test)
+                optimizer = torch.optim.SGD([{'params':fusion.parameters(),'lr':self.params.lr},{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, nesterov=True, weight_decay=self.params.wd_test)
                 # 1shot : 69.20+-    5shot 85.73
-                # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,150], gamma=0.1)
-                # iter_num = 180
-
-                # 5shot try
-                # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 180, 240], gamma=0.1)
-                # iter_num = 300
+                lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,150], gamma=0.1)
+                # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120], gamma=0.1)
+                iter_num = 180
         else:
-            rec_layer = reconstruct_layer(in_channels=self.reduce_dim, out_channels=self.reduce_dim, p_drop=0.8,
-                                          p_des=0.5).cuda()
+
             rec_layer = reconstruct_layer(in_channels=self.reduce_dim, out_channels=self.reduce_dim,).cuda()
-            SFC = nn.Linear(self.reduce_dim, self.params.n_way).cuda()
+            if self.params.embeding_way in ['baseline++']:
+                SFC = nn.Linear(self.reduce_dim, self.params.n_way, bias=False).cuda()
+                WeightNorm.apply(SFC, 'weight', dim=0)
+            else:
+                SFC = nn.Linear(self.reduce_dim, self.params.n_way).cuda()
+            fusion =fusion_module(dim=self.reduce_dim).cuda()
             if self.params.optim in ['Adam']:
                 # lr = 5e-3
-                optimizer = torch.optim.Adam([{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
+                optimizer = torch.optim.Adam([{'params':fusion.parameters()},{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
                                              lr=self.params.lr, weight_decay=self.params.wd_test)
                 # optimizer = torch.optim.Adam([{'params': SFC.parameters()}],lr=1e-3, weight_decay=5e-4)
                 #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,], gamma=0.5)
-                lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, ], gamma=0.1)
-                iter_num = 150
+                # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, ], gamma=0.2)
+                # iter_num = 150
 
                 optimizer = torch.optim.Adam([{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
                                              lr=self.params.lr, weight_decay=self.params.wd_test)
                 iter_num = 100
+            elif self.params.embeding_way in ['baseline++']:
+                optimizer = torch.optim.Adam([{'params': SFC.parameters()}],
+                                            lr=0.001, weight_decay=self.params.wd_test)
             else:
-                optimizer = torch.optim.SGD([{'params': rec_layer.parameters(),}, {'params': SFC.parameters()}],
+                optimizer = torch.optim.SGD([{'params':fusion.parameters()},{'params': rec_layer.parameters(),}, {'params': SFC.parameters()}],
                                             lr=self.params.lr, momentum=0.9, nesterov=True,
                                             weight_decay=self.params.wd_test)
-                optimizer = torch.optim.SGD([{'params': rec_layer.parameters(), }, {'params': SFC.parameters()}],
-                                            lr=self.params.lr, momentum=0.9,
-                                            weight_decay=self.params.wd_test)
+                # optimizer = torch.optim.SGD([{'params': rec_layer.parameters(), }, {'params': SFC.parameters()}],
+                #                             lr=self.params.lr, momentum=0.9,
+                #                             weight_decay=self.params.wd_test)
                 # optimizer = torch.optim.LBFGS([{'params': rec_layer.parameters(), }, {'params': SFC.parameters()}],lr=self.params.lr,
                 #                               )
                 lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100,160,240], gamma=0.1)
@@ -675,6 +746,8 @@ class Net_rec(nn.Module):
                 iter_num = 300
                 # lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=iter_num,eta_min=1e-4)
 
+                lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 150], gamma=0.1)
+                iter_num = 180
 
                 # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120], gamma=0.1)
                 # iter_num = 150
@@ -704,25 +777,38 @@ class Net_rec(nn.Module):
             # optimizer = torch.optim.Adam([{'params':rec_layer.parameters(),'lr': 1e-3},{'params': SFC.parameters()}],lr=1e-3, weight_decay=1e-4)
             # optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=5e-3, weight_decay=5e-4)
 
-
-
         # loss_rec = 0
         rec_layer.train()
         SFC.train()
+        batch_fsl =min(16,support_z.shape[0])
+        no_stym_aug = False
+        sam_local = True
+        local_num = 5
 
         for i in range(iter_num):
             # sample_idxs = np.random.choice(range(support_z.shape[0]),min(64, support_z.shape[0]))
             # sample_idxs = random_sample(self.params.n_aug_support_samples,support_z.shape[0],self.params.n_way*self.params.n_aug_support_samples)
             # sample_idxs = random_sample(self.params.n_aug_support_samples,support_z.shape[0],min(25, self.params.n_way*self.params.n_shot))
+
             sample_idxs = range(0,support_z.shape[0],self.params.n_aug_support_samples)
-            sample_idxs_cons = random_sample(self.params.n_aug_support_samples,support_z.shape[0],min(25, self.params.n_way*self.params.n_shot))
+            if sam_local:
+                sample_idxs_cons = []
+                for s in range(local_num):
+                    sample_cons_part = torch.tensor(random_sample(self.params.n_aug_support_samples, support_z.shape[0],
+                                                     support_z.shape[0] // self.params.n_aug_support_samples))
+                    sample_idxs_cons.append(sample_cons_part.unsqueeze(0))
+                sample_idxs_cons = torch.cat(sample_idxs_cons).view(-1)
+            else:
+                sample_idxs_cons = random_sample(self.params.n_aug_support_samples,support_z.shape[0],support_z.shape[0]//self.params.n_aug_support_samples)
+            #
+            # sample_idxs = np.random.choice(range(support_z.shape[0] // self.params.n_aug_support_samples),
+            #                                batch_fsl) * self.params.n_aug_support_samples
+            # sample_idxs_cons = sample_idxs + np.random.choice(range(self.params.n_aug_support_samples),batch_fsl)
 
-            sample_support = support_z[sample_idxs,:,:,:]
-            sample_support_cons = support_z[sample_idxs_cons,:,:,:]
-            sample_label = support_ys[:,sample_idxs]
+            sample_support = support_z[sample_idxs, :, :, :]
+            sample_support_cons = support_z[sample_idxs_cons, :, :, :]
+            sample_label = support_ys[:, sample_idxs]
 
-
-            # ===========================
             rec_map = rec_layer(sample_support)
             rec_map_cons = rec_layer(sample_support_cons)
             # ==============================
@@ -730,118 +816,168 @@ class Net_rec(nn.Module):
             if self.params.embeding_way in ['BDC']:
                 BDC_ori = self.dcov(sample_support)
                 BDC_ori_cons = self.dcov(sample_support_cons)
-                # print(rec_map.shape)
                 BDC_rec = self.dcov(rec_map)
                 BDC_rec_cons = self.dcov(rec_map_cons)
 
             else:
                 BDC_ori = self.avg_pool(sample_support).view(sample_support.shape[0],-1)
-                BDC_ori_cons = self.avg_pool(sample_support_cons).view(sample_support.shape[0],-1)
+                BDC_ori_cons = self.avg_pool(sample_support_cons).view(sample_support_cons.shape[0],-1)
                 BDC_rec = self.avg_pool(rec_map).view(sample_support.shape[0],-1)
                 BDC_rec_cons = self.avg_pool(rec_map_cons).view(sample_support.shape[0],-1)
-
-                # BDC_ori = self.comp_relation(sample_support).view(sample_support.shape[0], -1)
-                # BDC_ori_cons = self.comp_relation(sample_support_cons).view(sample_support.shape[0], -1)
-                # BDC_rec = self.comp_relation(rec_map).view(sample_support.shape[0], -1)
-                # BDC_rec_cons = self.comp_relation(rec_map_cons).view(sample_support.shape[0], -1)
 
             # BDC_ori = self.comp_relation(sample_support)
             spt_norm = torch.norm(BDC_ori, p=2, dim=1).unsqueeze(1).expand_as(BDC_ori)
             BDC_ori = BDC_ori.div(spt_norm + 1e-6 )
-
-            # # BDC_ori_cons = self.comp_relation(sample_support_cons)
+            #
             spt_norm_cons = torch.norm(BDC_ori_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_ori_cons)
             BDC_ori_cons = BDC_ori_cons.div(spt_norm_cons + 1e-6)
-
-
-            # BDC_rec = self.comp_relation(rec_map)
-
-            # BDC_rec_cons = self.comp_relation(rec_map_cons)
-
-            # for idx, cls in enumerate(sample_label):
-            #     prototype[cls, :] = 0.8 * prototype[cls, :] + (1 - 0.8) * BDC_ori[idx,:]
-
+            #
+            # # if not self.params.LR_rec:
             spt_norm = torch.norm(BDC_rec, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec)
-            BDC_norm = BDC_rec.div(spt_norm + 1e-6)
-
+            BDC_rec = BDC_rec.div(spt_norm + 1e-6)
+            #
             spt_norm = torch.norm(BDC_rec_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec_cons)
-            BDC_norm_cons = BDC_rec_cons.div(spt_norm + 1e-6)
+            BDC_rec_cons = BDC_rec_cons.div(spt_norm + 1e-6)
 
-            # ==================================
-            # BDC_x =self.drop((BDC_norm+BDC_norm_cons)/2)
-            # ==================================
-            # BDC_x = self.drop((BDC_ori + BDC_ori_cons)/2)
-            # BDC_x = BDC_ori
-            # print(BDC_norm_cons.shape)
-            # print(BDC_norm.shape)
-            BDC_x =(BDC_norm+BDC_norm_cons)/2
+            if sam_local:
+                # print(BDC_ori_cons.shape)
+                BDC_ori_cons = torch.mean(BDC_ori_cons.view(local_num,-1,*BDC_ori_cons.size()[1:]),dim=0)
+
+            if self.params.n_aug_support_samples==1:
+                BDC_x = BDC_ori
+            else:
+                BDC_x = (BDC_ori_cons + BDC_ori) / 2
+            if np.random.rand() <= self.params.drop_few:
+                # pass
+                BDC_x = BDC_ori_cons
+
+            # BDC_x_norm = torch.norm(BDC_x, p=2, dim=1).unsqueeze(1).expand_as(BDC_x)
+            # BDC_x = BDC_x.div(BDC_x_norm + 1e-6)
+
+            # if self.params.ablation % 2 == 1:
+            #     BDC_x = BDC_ori_cons
+
             BDC_x = self.drop(BDC_x)
             out = SFC(BDC_x)
-            # out_cons = SFC(BDC_norm_cons)
+            # out = SFC(BDC_rec)
+            if no_stym_aug:
+                out = out.reshape(BDC_rec.shape[0], self.params.n_way, -1)
+                # out = torch.max(out,dim=1)[0]
+                # out = out - torch.mean(out,dim=1).unsqueeze(1) - torch.mean(out,dim=2).unsqueeze(2) + torch.mean(torch.mean(out,dim=-1),dim=-1).unsqueeze(-1).unsqueeze(-1)
+                out =  out[:, range(self.params.n_way), range(self.params.n_way)]
 
-            # loss_ce = 0.5 * (F.cross_entropy(out,sample_label.cuda().squeeze(0))+F.cross_entropy(out_cons,sample_label.cuda().squeeze(0)))
             loss_ce = loss_ce_fn(out,sample_label.squeeze(0))
-            # loss_rec = 0.5 *(F.mse_loss(BDC_ori, BDC_norm_cons)+F.mse_loss(BDC_ori_cons, BDC_norm))
-            # loss_rec = 0.5*(uniformity_loss(BDC_ori, BDC_norm_cons,sample_label)+uniformity_loss(BDC_ori_cons, BDC_norm,sample_label))
-            # =============================
-            # BDC_rec_cons = self.comp_relation(rec_map_cons).view(sample_support.shape[0], -1)
-            # spt_norm = torch.norm(BDC_rec_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec_cons)
-            # BDC_norm_cons = BDC_rec_cons.div(spt_norm + 1e-6)
-
-            # BDC_ori = self.drop(BDC_ori)
-            # BDC_norm_cons = self.drop(BDC_norm_cons)
-
-            # loss_rec = uniformity_loss(BDC_ori, BDC_norm_cons,sample_label,temp=0.5)
-            # 1.5 try
-            loss_rec = uniformity_loss(BDC_ori, BDC_norm_cons,temp=0.5)
-            # 对比
-            # loss_rec = uniformity_loss(BDC_norm, BDC_norm_cons,sample_label)
-            # loss_rec = -Distance_Correlation(rec_map.view(rec_map.shape[0],-1),rec_map_cons.view(rec_map.shape[0],-1))
-            # loss_rec = Distance_Correlation(BDC_norm,BDC_norm_cons)
 
 
-            # loss_rec = 1 * F.l1_loss(BDC_norm, BDC_ori)
-
-            # loss =0.5 * loss_ce + 0.5 * loss_rec
             loss = loss_ce
+            # loss = loss_rec
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            # print(fusion.weight.data[0])
             if lr_scheduler is not None:
                 lr_scheduler.step()
             # print('loss_ce: {:.2f} \t loss_mse: {:.2f}'.format(loss_ce,loss_rec))
 
         rec_layer.eval()
         SFC.eval()
+        fusion.eval()
+        if self.params.LR_rec:
+            support_z_rec = rec_layer(support_z)
+
+            if self.params.embeding_way in ['BDC']:
+                support_z_rec = self.dcov(support_z_rec)
+            else:
+                support_z_rec = self.avg_pool(support_z_rec)
+            spt_norm = torch.norm(support_z_rec, p=2, dim=1).unsqueeze(1).expand_as(support_z_rec)
+            support_z_rec = support_z_rec.div(spt_norm + 1e-6)
+            support_z_rec = support_z_rec.reshape(support_z.shape[0]//self.params.n_aug_support_samples,self.params.n_aug_support_samples,-1)
+            # support_ys = support_ys.view((support_z.shape[0]//self.params.n_aug_support_samples,-1))[:,0]
+            support_ys = support_ys.reshape((support_z.shape[0]//self.params.n_aug_support_samples,-1))[:,1:]
+
+            # support_z_rec = 0.5 * support_z_rec[:,0,:] + 0.5* torch.mean(support_z_rec[:,1:,:],dim=1)
+            support_z_rec = 0.5 * support_z_rec[:,0,:].unsqueeze(1) + 0.5* support_z_rec[:,1:,:]
+            # support_z_rec = support_z_rec[:,0,:]
+            clf = self.LR_rec(
+                support_z_rec.reshape(support_z_rec.shape[0] * (self.params.n_aug_support_samples - 1), -1),
+                support_ys)
+            # clf = self.LR_rec(
+            #     support_z_rec,
+            #     support_ys)
+
         with torch.no_grad():
+            # print(query_z.shape)
             query_rec = rec_layer(query_z)
             # query_rec = query_z
             if self.params.embeding_way in ['BDC']:
+                query_ori = self.dcov(query_z)
                 query_rec = self.dcov(query_rec)
             else:
+                query_ori = self.avg_pool(query_z)
                 query_rec = self.avg_pool(query_rec)
                 # query_rec = self.comp_relation(query_rec)
 
             # query_rec = self.dcov(query_z)
             # query_rec = self.comp_relation(query_rec)
-            spt_norm = torch.norm(query_rec, p=2, dim=1).unsqueeze(1).expand_as(query_rec)
-            query_rec = query_rec.div(spt_norm + 1e-6)
+            # spt_norm = torch.norm(query_rec, p=2, dim=1).unsqueeze(1).expand_as(query_rec)
+            # query_rec = query_rec.div(spt_norm + 1e-6)
 
+            spt_norm = torch.norm(query_ori, p=2, dim=1).unsqueeze(1).expand_as(query_ori)
+            query_ori = query_ori.div(spt_norm + 1e-6)
             # print(query_rec.shape)
+            # print(query_rec.shape)
+            # query_rec = query_rec.view(query_rec.shape[0]//self.params.n_symmetry_aug, self.params.n_symmetry_aug, -1)
             query_rec = query_rec.view(query_rec.shape[0]//self.params.n_symmetry_aug, self.params.n_symmetry_aug, -1)
+            query_ori = query_ori.view(query_ori.shape[0]//self.params.n_symmetry_aug, self.params.n_symmetry_aug, -1)
+
             # query_rec = 1 / (self.params.n_symmetry_aug) * torch.sum(query_rec, dim=1)
             if self.params.n_symmetry_aug>1:
                 # query_rec = 1 / (self.params.n_symmetry_aug) * torch.sum(query_rec, dim=1)
-                query_rec = 0.5 * query_rec[:,0,:] + 0.5 * (1 / (self.params.n_symmetry_aug-1) * torch.sum(query_rec[:,1:,:], dim=1))
-            else:
-                query_rec =  query_rec[:, 0, :]
+                # query_rec = 0.5 * query_rec[:,0,:] + 0.5 * (1 / (self.params.n_symmetry_aug-1) * torch.sum(query_rec[:,1:,:], dim=1))
+                # query_rec = 0.5 * query_ori[:,0,:] + 0.5 * (1 / (self.params.n_symmetry_aug-1) * torch.sum(query_rec[:,1:,:], dim=1))
+                # query_rec = 0.5 * query_ori[:,0,:] + 0.5 * (1 / (self.params.n_symmetry_aug-1) * torch.sum(query_ori[:,1:self.params.n_symmetry_aug,:], dim=1))
+                # query_cons = (1 / (self.params.n_symmetry_aug - 1) * torch.sum(query_ori[:, 1:self.params.n_symmetry_aug, :], dim=1))
+                # query_cons = torch.max(query_ori[:, 1:self.params.n_symmetry_aug, :], dim=1)[0]
+                query_cons = torch.mean(query_ori[:, 1:self.params.n_symmetry_aug, :], dim=1)
 
-            out = SFC(query_rec)
+                query_rec = fusion(torch.cat([query_ori[:,0,:].unsqueeze(1),query_cons.unsqueeze(1)],dim=1)).view(query_ori.shape[0],-1)
+                # if int(self.params.ablation/2) == 1 and self.params.ablation>1:
+                #     # query_rec =  query_cons
+                #     query_rec = query_cons
+                # query_rec = 0.3*query_ori[:,0,:]+0.7*query_cons
+
+            else:
+                # query_rec =  query_rec[:, 0, :]
+                query_rec = query_ori[:, 0, :]
+            # spt_norm = torch.norm(query_rec, p=2, dim=1).unsqueeze(1).expand_as(query_rec)
+            # query_rec = query_rec.div(spt_norm + 1e-6)
+            # if no_stym_aug:
+            #     # print(query_rec.shape)
+            #     query_rec = (query_rec.unsqueeze(1).expand(query_rec.shape[0],prototype.shape[0],self.dim)+prototype.unsqueeze(0))/2
+            if no_stym_aug:
+                query_rec = (query_rec.unsqueeze(1).expand(query_rec.shape[0], prototype.shape[0],
+                                                           self.dim) + prototype.unsqueeze(0)) / 2
+            if self.params.LR_rec:
+
+                # print(query_rec.shape)
+                z_query = query_rec.detach().cpu().numpy()
+                out = torch.from_numpy(clf.predict(z_query))
+            else:
+                out = SFC(query_rec)
+                if no_stym_aug:
+                    out = out.reshape(query_rec.shape[0],self.params.n_way,-1)
+                    # out = torch.max(out,dim=1)[0]
+                    # out = F.softmax(out,dim=-1)
+                    return out[:,range(self.params.n_way),range(self.params.n_way)]
+                    # print(out.shape)
         return out
+
 
     # def softmax(self,support_z,support_ys,query_z,):
     #     # proto : K * D
-    #     # prototype = torch.zeros((self.params.n_way, self.dim)).cuda()
+    #     prototype = torch.zeros((self.params.n_way, self.dim)).cuda()
+    #     # prototype = torch.zeros((support_z.shape[0]//self.params.n_aug_support_samples, self.dim)).cuda()
+    #
     #     loss_ce_fn = nn.CrossEntropyLoss()
     #     lr_scheduler = None
     #     # support_z = support_z.cpu().detach()
@@ -850,7 +986,7 @@ class Net_rec(nn.Module):
     #     support_ys = support_ys.cuda()
     #
     #     if self.params.embeding_way in ['BDC']:
-    #         rec_layer = reconstruct_layer().cuda()
+    #         rec_layer = reconstruct_layer(p_des=self.params.drop_few).cuda()
     #         SFC = nn.Linear(self.dim, self.params.n_way).cuda()
     #         # rec_layer = reconstruct_layer().cpu()
     #         # SFC = nn.Linear(self.dim, self.params.n_way).cpu()
@@ -862,8 +998,8 @@ class Net_rec(nn.Module):
     #             optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, weight_decay=self.params.wd_test)
     #         # optimizer = torch.optim.Adam([{'params': SFC.parameters()}],lr=1e-3, weight_decay=5e-4)
     #         #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,], gamma=0.5)
-    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100,], gamma=0.1)
-    #             iter_num = 150
+    #         #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100,], gamma=0.1)
+    #         #     iter_num = 200
     #
     #             optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, weight_decay=self.params.wd_test)
     #             iter_num = 100
@@ -871,350 +1007,286 @@ class Net_rec(nn.Module):
     #             # best
     #             optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, nesterov=True, weight_decay=self.params.wd_test)
     #             # try:
-    #             optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, weight_decay=self.params.wd_test)
+    #             # optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, weight_decay=self.params.wd_test)
     #
     #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,120], gamma=0.2)
-    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,160,240,360], gamma=0.1)
-    #             iter_num = 450
-    #
-    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[180, 360, 540, 720],
-    #                                                                 gamma=0.1)
-    #             iter_num = 800
+    #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,160,240,360], gamma=0.1)
+    #             # iter_num = 450
     #
     #             # 1shot : 69.20+-    5shot 85.73
-    #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,150], gamma=0.1)
-    #             # iter_num = 180
+    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,150], gamma=0.1)
+    #             iter_num = 180
     #
     #             # 5shot try
     #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 180, 240], gamma=0.1)
     #             # iter_num = 300
     #     else:
     #         rec_layer = reconstruct_layer(in_channels=self.reduce_dim, out_channels=self.reduce_dim, p_drop=0.8,
-    #                                       p_des=0.5).cuda()
-    #
-    #         SFC= nn.Linear(640,5)
-    #         rec_net = Rec_Net(reduce_dim=self.reduce_dim)
+    #                                       p_des=self.params.drop_few).cuda()
+    #         rec_layer = reconstruct_layer(in_channels=self.reduce_dim, out_channels=self.reduce_dim,).cuda()
+    #         SFC = nn.Linear(self.reduce_dim, self.params.n_way).cuda()
     #         if self.params.optim in ['Adam']:
     #             # lr = 5e-3
     #             optimizer = torch.optim.Adam([{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
     #                                          lr=self.params.lr, weight_decay=self.params.wd_test)
     #             # optimizer = torch.optim.Adam([{'params': SFC.parameters()}],lr=1e-3, weight_decay=5e-4)
     #             #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,], gamma=0.5)
-    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, ], gamma=0.1)
+    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, ], gamma=0.2)
     #             iter_num = 150
     #
-    #             optimizer = torch.optim.Adam([{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
-    #                                          lr=self.params.lr, weight_decay=self.params.wd_test)
-    #             iter_num = 100
+    #             # optimizer = torch.optim.Adam([{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
+    #             #                              lr=self.params.lr, weight_decay=self.params.wd_test)
+    #             # iter_num = 100
     #         else:
-    #             # optimizer = torch.optim.SGD([{'params': rec_layer.parameters(),}, {'params': SFC.parameters()}],
-    #             #                             lr=self.params.lr, momentum=0.9, nesterov=True,
-    #             #                             weight_decay=self.params.wd_test)
+    #             optimizer = torch.optim.SGD([{'params': rec_layer.parameters(),}, {'params': SFC.parameters()}],
+    #                                         lr=self.params.lr, momentum=0.9, nesterov=True,
+    #                                         weight_decay=self.params.wd_test)
     #             # optimizer = torch.optim.SGD([{'params': rec_layer.parameters(), }, {'params': SFC.parameters()}],
     #             #                             lr=self.params.lr, momentum=0.9,
     #             #                             weight_decay=self.params.wd_test)
-    #             optimizer = torch.optim.LBFGS(rec_net.parameters(),lr=self.params.lr,max_iter=1000,
-    #                                           )
-    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[5], gamma=0.1)
+    #             # optimizer = torch.optim.LBFGS([{'params': rec_layer.parameters(), }, {'params': SFC.parameters()}],lr=self.params.lr,
+    #             #                               )
+    #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100,160,240], gamma=0.1)
     #
     #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 160, 240, 360],
     #             #                                                     gamma=0.1)
     #             # iter_num = 450
-    #             iter_num = 1
+    #             iter_num = 300
+    #             # lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=iter_num,eta_min=1e-4)
     #
+    #
+    #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120], gamma=0.1)
+    #             # iter_num = 150
+    #
+    #             # 1shot : 69.20+-    5shot 85.73
+    #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 150], gamma=0.1)
+    #             # iter_num = 180
+    #             # 62.05 77.54
+    #             # 62.05 77.54
+    #             # optimizer = torch.optim.SGD([{'params': rec_layer.parameters(), 'lr': 2}, {'params': SFC.parameters()}],
+    #             #                             lr=0.5, momentum=0.9, nesterov=True, weight_decay=0.05)
+    #             # # optimizer = torch.optim.SGD([{'params': rec_layer.parameters(),}, {'params': SFC.parameters()}],lr=0.5, momentum=0.9, nesterov=True, weight_decay=0.05)
+    #             # # optimizer = torch.optim.SGD([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=0.5, momentum=0.9, nesterov=True, weight_decay=0.05)
+    #             # # 1-shot pure : 62.57
+    #             # optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),'lr':5e-1},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, nesterov=True, weight_decay=5e-2)
+    #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200,400,600,800], gamma=0.1)
+    #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[120, 240], gamma=0.2)
+    #             #
+    #             # iter_num = 360
+    #         # rec_layer = reconstruct_layer().cuda()
+    #         # SFC = nn.Linear(self.dim, self.params.n_way).cuda()
+    #
+    #         # self.drop = nn.Dropout(0.6)
+    #         # Good Embedding
+    #         # 62.4
+    #         # optimizer = torch.optim.Adam([{'params':rec_layer.parameters(),'lr':5e-2},{'params': SFC.parameters()}],lr=4e-3, weight_decay=1e-4,eps=1e-5)
+    #         # optimizer = torch.optim.Adam([{'params':rec_layer.parameters(),'lr': 1e-3},{'params': SFC.parameters()}],lr=1e-3, weight_decay=1e-4)
+    #         # optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=5e-3, weight_decay=5e-4)
+    #
+    #
+    #
+    #     # loss_rec = 0
     #     rec_layer.train()
     #     SFC.train()
+    #     batch_fsl =min(8,support_z.shape[0])
+    #     no_stym_aug = False
     #
     #     for i in range(iter_num):
     #         # sample_idxs = np.random.choice(range(support_z.shape[0]),min(64, support_z.shape[0]))
     #         # sample_idxs = random_sample(self.params.n_aug_support_samples,support_z.shape[0],self.params.n_way*self.params.n_aug_support_samples)
     #         # sample_idxs = random_sample(self.params.n_aug_support_samples,support_z.shape[0],min(25, self.params.n_way*self.params.n_shot))
+    #         print(support_z.shape)
     #         sample_idxs = range(0,support_z.shape[0],self.params.n_aug_support_samples)
-    #         sample_idxs_cons = random_sample(self.params.n_aug_support_samples,support_z.shape[0],min(25, self.params.n_way*self.params.n_shot))
+    #         sample_idxs_cons = random_sample(self.params.n_aug_support_samples,support_z.shape[0],support_z.shape[0]//self.params.n_aug_support_samples)
+    #         sample_support = support_z[sample_idxs, :, :, :]
+    #         sample_support_cons = support_z[sample_idxs_cons, :, :, :]
+    #         sample_label = support_ys[:, sample_idxs]
+    #         # print(support_z.shape[0])
+    #         # print(sample_idxs_cons.shape)
+    #         # sample_idxs = np.random.choice(range(support_z.shape[0]//self.params.n_aug_support_samples),batch_fsl)*self.params.n_aug_support_samples
+    #         # # print(sample_idxs.shape)
+    #         # sample_idxs_cons = sample_idxs + np.random.choice(range(self.params.n_aug_support_samples),batch_fsl)
+    #         # sample_support = support_z[sample_idxs, :, :, :]
+    #         # sample_support_cons = support_z[sample_idxs_cons, :, :, :]
+    #         # sample_label = support_ys[:, sample_idxs]
     #
-    #         sample_support = support_z[sample_idxs,:,:,:]
-    #         sample_support_cons = support_z[sample_idxs_cons,:,:,:]
-    #         sample_label = support_ys[:,sample_idxs]
     #
-    #         def closure():
-    #             optimizer.zero_grad()
-    #             out = rec_net(sample_support,sample_support_cons)
-    #             loss_ce = loss_ce_fn(out, sample_label.squeeze(0))
-    #             loss = loss_ce
-    #             loss.backward()
-    #             return loss
-    #         optimizer.step(closure)
+    #         # ===========================
+    #         rec_map = rec_layer(sample_support)
+    #         rec_map_cons = rec_layer(sample_support_cons)
+    #         # ==============================
+    #
+    #         if self.params.embeding_way in ['BDC']:
+    #             BDC_ori = self.dcov(sample_support)
+    #             BDC_ori_cons = self.dcov(sample_support_cons)
+    #             # print(rec_map.shape)
+    #             BDC_rec = self.dcov(rec_map)
+    #             BDC_rec_cons = self.dcov(rec_map_cons)
+    #
+    #         else:
+    #             BDC_ori = self.avg_pool(sample_support).view(sample_support.shape[0],-1)
+    #             BDC_ori_cons = self.avg_pool(sample_support_cons).view(sample_support.shape[0],-1)
+    #             BDC_rec = self.avg_pool(rec_map).view(sample_support.shape[0],-1)
+    #             BDC_rec_cons = self.avg_pool(rec_map_cons).view(sample_support.shape[0],-1)
+    #
+    #             # BDC_ori = self.comp_relation(sample_support).view(sample_support.shape[0], -1)
+    #             # BDC_ori_cons = self.comp_relation(sample_support_cons).view(sample_support.shape[0], -1)
+    #             # BDC_rec = self.comp_relation(rec_map).view(sample_support.shape[0], -1)
+    #             # BDC_rec_cons = self.comp_relation(rec_map_cons).view(sample_support.shape[0], -1)
+    #
+    #         # BDC_ori = self.comp_relation(sample_support)
+    #         spt_norm = torch.norm(BDC_ori, p=2, dim=1).unsqueeze(1).expand_as(BDC_ori)
+    #         BDC_ori = BDC_ori.div(spt_norm + 1e-6 )
+    #
+    #         # # BDC_ori_cons = self.comp_relation(sample_support_cons)
+    #         spt_norm_cons = torch.norm(BDC_ori_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_ori_cons)
+    #         BDC_ori_cons = BDC_ori_cons.div(spt_norm_cons + 1e-6)
+    #
+    #         # if not self.params.LR_rec:
+    #         spt_norm = torch.norm(BDC_rec, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec)
+    #         BDC_rec = BDC_rec.div(spt_norm + 1e-6)
+    #
+    #         spt_norm = torch.norm(BDC_rec_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec_cons)
+    #         BDC_rec_cons = BDC_rec_cons.div(spt_norm + 1e-6)
+    #
+    #         # for p in range(self.params.n_way):
+    #         prototype = 0.8 * prototype.detach() + 0.2 * torch.mean(BDC_rec_cons.reshape(self.params.n_shot,self.params.n_way,-1),dim=0)
+    #
+    #         # ==================================
+    #         # BDC_x =self.drop((BDC_norm+BDC_norm_cons)/2)
+    #         # ==================================
+    #         # BDC_x = self.drop((BDC_ori + BDC_ori_cons)/2)
+    #         # BDC_x = BDC_ori
+    #         # print(BDC_norm_cons.shape)
+    #         # print(BDC_norm.shape)
+    #         # # BDC_x =(BDC_norm+BDC_norm_cons)/2
+    #         BDC_x =(BDC_rec+BDC_rec_cons)/2
+    #         # BDC_x = BDC_rec
+    #         if no_stym_aug:
+    #             # print(query_rec.shape)
+    #             BDC_x = (BDC_rec.unsqueeze(1).expand(BDC_rec.shape[0],prototype.shape[0],self.dim)+prototype.unsqueeze(0))/2
+    #         # BDC_x = (BDC_rec+prototype)/2
+    #         # BDC_x_norm = torch.norm(BDC_x, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec_cons)
+    #         # BDC_x = BDC_rec_cons.div(BDC_x_norm + 1e-6)
+    #
+    #         BDC_x = self.drop(BDC_x)
+    #         out = SFC(BDC_x)
+    #         if no_stym_aug:
+    #             # out = out.reshape(BDC_rec.shape[0], self.params.n_way, -1)
+    #             out = torch.max(out,dim=1)[0]
+    #             # out =  out[:, range(self.params.n_way), range(self.params.n_way)]
+    #         # out_cons = SFC(BDC_norm_cons)
+    #
+    #         # loss_ce = 0.5 * (F.cross_entropy(out,sample_label.cuda().squeeze(0))+F.cross_entropy(out_cons,sample_label.cuda().squeeze(0)))
+    #         loss_ce = loss_ce_fn(out,sample_label.squeeze(0))
+    #         # loss_rec = 0.5 *(F.mse_loss(BDC_ori, BDC_norm_cons)+F.mse_loss(BDC_ori_cons, BDC_norm))
+    #         # loss_rec = 0.5*(uniformity_loss(BDC_ori, BDC_norm_cons,sample_label)+uniformity_loss(BDC_ori_cons, BDC_norm,sample_label))
+    #         # =============================
+    #         # BDC_rec_cons = self.comp_relation(rec_map_cons).view(sample_support.shape[0], -1)
+    #         # spt_norm = torch.norm(BDC_rec_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec_cons)
+    #         # BDC_norm_cons = BDC_rec_cons.div(spt_norm + 1e-6)
+    #
+    #         # BDC_ori = self.drop(BDC_ori)
+    #         # BDC_norm_cons = self.drop(BDC_norm_cons)
+    #
+    #         # loss_rec = uniformity_loss(BDC_ori, BDC_norm_cons,sample_label,temp=0.5)
+    #         # 1.5 try
+    #         # loss_rec = uniformity_loss(BDC_ori_cons, BDC_rec_cons,temp=0.2)
+    #         # loss_rec += uniformity_loss(BDC_ori, BDC_rec, temp=0.2)
+    #         # 对比s
+    #         # loss_rec = uniformity_loss(BDC_norm, BDC_norm_cons,sample_label)
+    #         # loss_rec = -Distance_Correlation(rec_map.view(rec_map.shape[0],-1),rec_map_cons.view(rec_map.shape[0],-1))
+    #         # loss_rec = Distance_Correlation(BDC_ori, prototype)
+    #         # loss_rec = Distance_Correlation(BDC_ori,BDC_rec_cons)
+    #         if int(self.params.Loss_ablation/2)>0:
+    #             loss_rec = Distance_Correlation(BDC_ori, BDC_rec)
+    #         else:
+    #             loss_rec = 0
+    #         if self.params.Loss_ablation%2>0:
+    #             loss_rec += Distance_Correlation(BDC_rec,BDC_rec_cons)
+    #
+    #
+    #         # loss_rec = 1 * F.l1_loss(BDC_norm, BDC_ori)
+    #
+    #
+    #         # 2.12try
+    #         # loss_rec = uniformity_loss(BDC_rec, BDC_rec_cons,temp=0.5)
+    #         # print(loss_rec)
+    #         # loss =0.5 * loss_ce + 0.5 * loss_rec
+    #         loss = loss_ce
+    #         # loss = loss_rec
+    #         optimizer.zero_grad()
+    #         loss.backward()
+    #         optimizer.step()
     #         if lr_scheduler is not None:
     #             lr_scheduler.step()
     #         # print('loss_ce: {:.2f} \t loss_mse: {:.2f}'.format(loss_ce,loss_rec))
     #
     #     rec_layer.eval()
     #     SFC.eval()
-    #     rec_net.eval
+    #     if self.params.LR_rec:
+    #         support_z_rec = rec_layer(support_z)
+    #         if self.params.embeding_way in ['BDC']:
+    #             support_z_rec = self.dcov(support_z_rec)
+    #         else:
+    #             support_z_rec = self.avg_pool(support_z_rec)
+    #         spt_norm = torch.norm(support_z_rec, p=2, dim=1).unsqueeze(1).expand_as(support_z_rec)
+    #         support_z_rec = support_z_rec.div(spt_norm + 1e-6)
+    #         support_z_rec = support_z_rec.reshape(support_z.shape[0]//self.params.n_aug_support_samples,self.params.n_aug_support_samples,-1)
+    #         # support_ys = support_ys.view((support_z.shape[0]//self.params.n_aug_support_samples,-1))[:,0]
+    #         support_ys = support_ys.reshape((support_z.shape[0]//self.params.n_aug_support_samples,-1))[:,1:]
+    #
+    #         # support_z_rec = 0.5 * support_z_rec[:,0,:] + 0.5* torch.mean(support_z_rec[:,1:,:],dim=1)
+    #         support_z_rec = 0.5 * support_z_rec[:,0,:].unsqueeze(1) + 0.5* support_z_rec[:,1:,:]
+    #         # support_z_rec = support_z_rec[:,0,:]
+    #         clf = self.LR_rec(
+    #             support_z_rec.reshape(support_z_rec.shape[0] * (self.params.n_aug_support_samples - 1), -1),
+    #             support_ys)
+    #         # clf = self.LR_rec(
+    #         #     support_z_rec,
+    #         #     support_ys)
+    #
     #     with torch.no_grad():
-    #         query_z = query_z.view(query_z.shape[0] // self.params.n_symmetry_aug, self.params.n_symmetry_aug, query_z.shape[1],query_z.shape[2],query_z.shape[3])
-    #         out = rec_net(query_z[:, 0, :,:,:], query_z[:, 0:, :,:,:])
+    #         query_rec = rec_layer(query_z)
+    #         # query_rec = query_z
+    #         if self.params.embeding_way in ['BDC']:
+    #             query_rec = self.dcov(query_rec)
+    #         else:
+    #             query_rec = self.avg_pool(query_rec)
+    #             # query_rec = self.comp_relation(query_rec)
+    #
+    #         # query_rec = self.dcov(query_z)
+    #         # query_rec = self.comp_relation(query_rec)
+    #         spt_norm = torch.norm(query_rec, p=2, dim=1).unsqueeze(1).expand_as(query_rec)
+    #         query_rec = query_rec.div(spt_norm + 1e-6)
+    #
+    #         # print(query_rec.shape)
+    #         query_rec = query_rec.view(query_rec.shape[0]//self.params.n_symmetry_aug, self.params.n_symmetry_aug, -1)
+    #         # query_rec = 1 / (self.params.n_symmetry_aug) * torch.sum(query_rec, dim=1)
+    #         if self.params.n_symmetry_aug>1:
+    #             # query_rec = 1 / (self.params.n_symmetry_aug) * torch.sum(query_rec, dim=1)
+    #             query_rec = 0.5 * query_rec[:,0,:] + 0.5 * (1 / (self.params.n_symmetry_aug-1) * torch.sum(query_rec[:,1:,:], dim=1))
+    #         else:
+    #             query_rec =  query_rec[:, 0, :]
+    #         # spt_norm = torch.norm(query_rec, p=2, dim=1).unsqueeze(1).expand_as(query_rec)
+    #         # query_rec = query_rec.div(spt_norm + 1e-6)
+    #         if no_stym_aug:
+    #             # print(query_rec.shape)
+    #             query_rec = (query_rec.unsqueeze(1).expand(query_rec.shape[0],prototype.shape[0],self.dim)+prototype.unsqueeze(0))/2
+    #         if self.params.LR_rec:
+    #
+    #             # print(query_rec.shape)
+    #             z_query = query_rec.detach().cpu().numpy()
+    #             out = torch.from_numpy(clf.predict(z_query))
+    #         else:
+    #             out = SFC(query_rec)
+    #             if no_stym_aug:
+    #                 out = out.reshape(query_rec.shape[0],self.params.n_way,-1)
+    #                 # out = torch.max(out,dim=1)[0]
+    #                 # out = F.softmax(out,dim=-1)
+    #                 return out[:,range(self.params.n_way),range(self.params.n_way)]
+    #                 # print(out.shape)
     #     return out
-    #
-    # # def softmax(self,support_z,support_ys,query_z,):
-    # #     # proto : K * D
-    # #     # prototype = torch.zeros((self.params.n_way, self.dim)).cuda()
-    # #     loss_ce_fn = nn.CrossEntropyLoss()
-    # #     lr_scheduler = None
-    # #     # support_z = support_z.cpu().detach()
-    # #     # query_z = query_z.cpu().detach()
-    # #     # support_ys = support_ys.cpu().detach()
-    # #     support_ys = support_ys.cuda()
-    # #
-    # #     if self.params.embeding_way in ['BDC']:
-    # #         rec_layer = reconstruct_layer().cuda()
-    # #         SFC = nn.Linear(self.dim, self.params.n_way).cuda()
-    # #         # rec_layer = reconstruct_layer().cpu()
-    # #         # SFC = nn.Linear(self.dim, self.params.n_way).cpu()
-    # #         # self.dcov = self.dcov.cpu()
-    # #         # SFC.bias.data.fill_(0)
-    # #         # 1shot : 0.01 + wd:0.05
-    # #         if self.params.optim in ['Adam']:
-    # #             # lr = 5e-3
-    # #             optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, weight_decay=self.params.wd_test)
-    # #         # optimizer = torch.optim.Adam([{'params': SFC.parameters()}],lr=1e-3, weight_decay=5e-4)
-    # #         #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,], gamma=0.5)
-    # #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100,], gamma=0.1)
-    # #             iter_num = 150
-    # #
-    # #             optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=self.params.lr, weight_decay=self.params.wd_test)
-    # #             iter_num = 100
-    # #         else:
-    # #             optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, nesterov=True, weight_decay=self.params.wd_test)
-    # #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,120], gamma=0.2)
-    # #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120], gamma=0.1)
-    # #             # iter_num = 150
-    # #
-    # #             # 1shot : 69.20+-    5shot 85.73
-    # #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,150], gamma=0.1)
-    # #             iter_num = 180
-    # #
-    # #             # 5shot try
-    # #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 180, 240], gamma=0.1)
-    # #             # iter_num = 300
-    # #     else:
-    # #         rec_layer = reconstruct_layer(in_channels=self.reduce_dim, out_channels=self.reduce_dim//4, p_drop=0.8,
-    # #                                       p_des=0.5,skip_connect=False).cuda()
-    # #         SFC = nn.Linear(self.reduce_dim//4, self.params.n_way).cuda()
-    # #         if self.params.optim in ['Adam']:
-    # #             # lr = 5e-3
-    # #             optimizer = torch.optim.Adam([{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
-    # #                                          lr=self.params.lr, weight_decay=self.params.wd_test)
-    # #             # optimizer = torch.optim.Adam([{'params': SFC.parameters()}],lr=1e-3, weight_decay=5e-4)
-    # #             #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120,], gamma=0.5)
-    # #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, ], gamma=0.1)
-    # #             iter_num = 150
-    # #
-    # #             optimizer = torch.optim.Adam([{'params': rec_layer.parameters()}, {'params': SFC.parameters()}],
-    # #                                          lr=self.params.lr, weight_decay=self.params.wd_test)
-    # #             iter_num = 100
-    # #         else:
-    # #             optimizer = torch.optim.SGD([{'params': rec_layer.parameters(),}, {'params': SFC.parameters()}],
-    # #                                         lr=self.params.lr, momentum=0.9, nesterov=True,
-    # #                                         weight_decay=self.params.wd_test)
-    # #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80,120], gamma=0.2)
-    # #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60,120], gamma=0.1)
-    # #             iter_num = 150
-    # #
-    # #             # 1shot : 69.20+-    5shot 85.73
-    # #             lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 150], gamma=0.1)
-    # #             iter_num = 180
-    # #             # 62.05 77.54
-    # #             # 62.05 77.54
-    # #             # optimizer = torch.optim.SGD([{'params': rec_layer.parameters(), 'lr': 2}, {'params': SFC.parameters()}],
-    # #             #                             lr=0.5, momentum=0.9, nesterov=True, weight_decay=0.05)
-    # #             # # optimizer = torch.optim.SGD([{'params': rec_layer.parameters(),}, {'params': SFC.parameters()}],lr=0.5, momentum=0.9, nesterov=True, weight_decay=0.05)
-    # #             # # optimizer = torch.optim.SGD([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=0.5, momentum=0.9, nesterov=True, weight_decay=0.05)
-    # #             # 1-shot pure : 62.57
-    # #             # optimizer = torch.optim.SGD([{'params':rec_layer.parameters(),'lr':5e-1},{'params': SFC.parameters()}],lr=self.params.lr, momentum=0.9, nesterov=True, weight_decay=5e-2)
-    # #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200,400,600,800], gamma=0.1)
-    # #             # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[120, 240], gamma=0.2)
-    # #
-    # #             # iter_num = 360
-    # #
-    # #         # rec_layer = reconstruct_layer().cuda()
-    # #         # SFC = nn.Linear(self.dim, self.params.n_way).cuda()
-    # #
-    # #         # self.drop = nn.Dropout(0.6)
-    # #         # Good Embedding
-    # #         # 62.4
-    # #         # optimizer = torch.optim.Adam([{'params':rec_layer.parameters(),'lr':5e-2},{'params': SFC.parameters()}],lr=4e-3, weight_decay=1e-4,eps=1e-5)
-    # #         # optimizer = torch.optim.Adam([{'params':rec_layer.parameters(),'lr': 1e-3},{'params': SFC.parameters()}],lr=1e-3, weight_decay=1e-4)
-    # #         # optimizer = torch.optim.Adam([{'params':rec_layer.parameters()},{'params': SFC.parameters()}],lr=5e-3, weight_decay=5e-4)
-    # #
-    # #
-    # #
-    # #     loss_rec = 0
-    # #     rec_layer.train()
-    # #     SFC.train()
-    # #
-    # #     for i in range(iter_num):
-    # #         # sample_idxs = np.random.choice(range(support_z.shape[0]),min(64, support_z.shape[0]))
-    # #         # sample_idxs = random_sample(self.params.n_aug_support_samples,support_z.shape[0],self.params.n_way*self.params.n_aug_support_samples)
-    # #         # sample_idxs = random_sample(self.params.n_aug_support_samples,support_z.shape[0],min(25, self.params.n_way*self.params.n_shot))
-    # #         sample_idxs = range(0,support_z.shape[0],self.params.n_aug_support_samples)
-    # #         sample_idxs_cons = random_sample(self.params.n_aug_support_samples,support_z.shape[0],min(25, self.params.n_way*self.params.n_shot))
-    # #
-    # #         sample_support = support_z[sample_idxs,:,:,:]
-    # #         sample_support_cons = support_z[sample_idxs_cons,:,:,:]
-    # #         sample_label = support_ys[:,sample_idxs]
-    # #
-    # #
-    # #         # ===========================
-    # #         rec_map = rec_layer(sample_support)
-    # #         rec_map_cons = rec_layer(sample_support_cons)
-    # #         # ==============================
-    # #
-    # #         rec_map_dc = rec_map.reshape(rec_map.shape[0],rec_map.shape[1],-1)
-    # #         rec_map_cons_dc = rec_map_cons.reshape(rec_map.shape[0],rec_map.shape[1],-1)
-    # #
-    # #         if self.params.embeding_way in ['BDC']:
-    # #             BDC_ori = self.dcov(sample_support)
-    # #             BDC_ori_cons = self.dcov(sample_support_cons)
-    # #             # print(rec_map.shape)
-    # #             BDC_rec = self.dcov(rec_map)
-    # #             BDC_rec_cons = self.dcov(rec_map_cons)
-    # #
-    # #         else:
-    # #             BDC_ori = self.avg_pool(sample_support).view(sample_support.shape[0],-1)
-    # #             BDC_ori_cons = self.avg_pool(sample_support_cons).view(sample_support.shape[0],-1)
-    # #             BDC_rec = self.avg_pool(rec_map).view(sample_support.shape[0],-1)
-    # #             BDC_rec_cons = self.avg_pool(rec_map_cons).view(sample_support.shape[0],-1)
-    # #
-    # #             # BDC_ori = self.comp_relation(sample_support).view(sample_support.shape[0], -1)
-    # #             # BDC_ori_cons = self.comp_relation(sample_support_cons).view(sample_support.shape[0], -1)
-    # #             # BDC_rec = self.comp_relation(rec_map).view(sample_support.shape[0], -1)
-    # #             # BDC_rec_cons = self.comp_relation(rec_map_cons).view(sample_support.shape[0], -1)
-    # #
-    # #         # BDC_ori = self.comp_relation(sample_support)
-    # #         spt_norm = torch.norm(BDC_ori, p=2, dim=1).unsqueeze(1).expand_as(BDC_ori)
-    # #         BDC_ori = BDC_ori.div(spt_norm )
-    # #
-    # #         # # BDC_ori_cons = self.comp_relation(sample_support_cons)
-    # #         spt_norm_cons = torch.norm(BDC_ori_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_ori_cons)
-    # #         BDC_ori_cons = BDC_ori_cons.div(spt_norm_cons )
-    # #
-    # #
-    # #         # BDC_rec = self.comp_relation(rec_map)
-    # #
-    # #         # BDC_rec_cons = self.comp_relation(rec_map_cons)
-    # #
-    # #         # for idx, cls in enumerate(sample_label):
-    # #         #     prototype[cls, :] = 0.8 * prototype[cls, :] + (1 - 0.8) * BDC_ori[idx,:]
-    # #
-    # #         spt_norm = torch.norm(BDC_rec, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec)
-    # #         BDC_norm = BDC_rec.div(spt_norm )
-    # #
-    # #         spt_norm = torch.norm(BDC_rec_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec_cons)
-    # #         BDC_norm_cons = BDC_rec_cons.div(spt_norm )
-    # #
-    # #         # ==================================
-    # #         # BDC_x =self.drop((BDC_norm+BDC_norm_cons)/2)
-    # #         # ==================================
-    # #         # BDC_x = self.drop((BDC_ori + BDC_ori_cons)/2)
-    # #         # BDC_x = BDC_ori
-    # #         # print(BDC_norm_cons.shape)
-    # #         # print(BDC_norm.shape)
-    # #         BDC_x =(BDC_norm+BDC_norm_cons)/2
-    # #         BDC_x = self.drop(BDC_x)
-    # #         out = SFC(BDC_x)
-    # #         # out_cons = SFC(BDC_norm_cons)
-    # #
-    # #         # loss_ce = 0.5 * (F.cross_entropy(out,sample_label.cuda().squeeze(0))+F.cross_entropy(out_cons,sample_label.cuda().squeeze(0)))
-    # #         loss_ce = loss_ce_fn(out,sample_label.squeeze(0))
-    # #         # loss_rec = 0.5 *(F.mse_loss(BDC_ori, BDC_norm_cons)+F.mse_loss(BDC_ori_cons, BDC_norm))
-    # #         # loss_rec = 0.5*(uniformity_loss(BDC_ori, BDC_norm_cons,sample_label)+uniformity_loss(BDC_ori_cons, BDC_norm,sample_label))
-    # #         # =============================
-    # #         # BDC_rec_cons = self.comp_relation(rec_map_cons).view(sample_support.shape[0], -1)
-    # #         # spt_norm = torch.norm(BDC_rec_cons, p=2, dim=1).unsqueeze(1).expand_as(BDC_rec_cons)
-    # #         # BDC_norm_cons = BDC_rec_cons.div(spt_norm + 1e-6)
-    # #
-    # #         # BDC_ori = self.drop(BDC_ori)
-    # #         # BDC_norm_cons = self.drop(BDC_norm_cons)
-    # #
-    # #         # loss_rec = uniformity_loss(BDC_ori, BDC_norm_cons,sample_label,temp=0.5)
-    # #         # 1.5 try
-    # #         # loss_rec = uniformity_loss(BDC_ori, BDC_norm_cons,temp=0.5)
-    # #
-    # #         # loss_rec = Distance_Correlation(rec_map_dc,rec_map_cons_dc)
-    # #         # 对比
-    # #         loss_rec = uniformity_loss(BDC_norm, BDC_norm_cons,)
-    # #
-    # #
-    # #         # loss_rec = 1 * F.l1_loss(BDC_norm, BDC_ori)
-    # #
-    # #         loss =0.5 * loss_ce + 0.5 * loss_rec
-    # #         optimizer.zero_grad()
-    # #         loss.backward()
-    # #         optimizer.step()
-    # #         if lr_scheduler is not None:
-    # #             lr_scheduler.step()
-    # #         # print('loss_ce: {:.2f} \t loss_mse: {:.2f}'.format(loss_ce,loss_rec))
-    # #
-    # #     rec_layer.eval()
-    # #     SFC.eval()
-    # #     with torch.no_grad():
-    # #         query_rec = rec_layer(query_z)
-    # #         # query_rec = query_z
-    # #         if self.params.embeding_way in ['BDC']:
-    # #             query_rec = self.dcov(query_rec)
-    # #         else:
-    # #             query_rec = self.avg_pool(query_rec)
-    # #             # query_rec = self.comp_relation(query_rec)
-    # #
-    # #         # query_rec = self.dcov(query_z)
-    # #         # query_rec = self.comp_relation(query_rec)
-    # #         spt_norm = torch.norm(query_rec, p=2, dim=1).unsqueeze(1).expand_as(query_rec)
-    # #         query_rec = query_rec.div(spt_norm )
-    # #
-    # #         # print(query_rec.shape)
-    # #         query_rec = query_rec.view(query_rec.shape[0]//self.params.n_symmetry_aug, self.params.n_symmetry_aug, -1)
-    # #         # query_rec = 1 / (self.params.n_symmetry_aug) * torch.sum(query_rec, dim=1)
-    # #         if self.params.n_symmetry_aug>1:
-    # #             # query_rec = 1 / (self.params.n_symmetry_aug) * torch.sum(query_rec, dim=1)
-    # #             query_rec = 0.5 * query_rec[:,0,:] + 0.5 * (1 / (self.params.n_symmetry_aug-1) * torch.sum(query_rec[:,0:,:], dim=1))
-    # #         else:
-    # #             query_rec =  query_rec[:, 0, :]
-    # #         out = SFC(query_rec)
-    # #     return out
-    #
-    # # def Distance_Correlation(self, x, y):
-    # #
-    # #     batchSize, dim, h, w = x.data.shape
-    # #     M = h * w
-    # #     x = x.reshape(batchSize, dim, M)
-    # #     I = torch.eye(dim, dim, device=x.device).view(1, dim, dim).repeat(batchSize, 1, 1).type(x.dtype)
-    # #     I_M = torch.ones(batchSize, dim, dim, device=x.device).type(x.dtype)
-    # #     x_pow2 = x.bmm(x.transpose(1, 2))
-    # #     dcov = I_M.bmm(x_pow2 * I) + (x_pow2 * I).bmm(I_M) - 2 * x_pow2
-    # #     dcov = torch.clamp(dcov, min=0.0)
-    # #
-    # #     dcov = torch.sqrt(dcov + 1e-5)
-    # #     matrix_A = dcov - 1. / dim * dcov.bmm(I_M) - 1. / dim * I_M.bmm(dcov) + 1. / (dim * dim) * I_M.bmm(dcov).bmm(I_M)
-    # #
-    # #     y = y.reshape(batchSize, dim, M)
-    # #     I = torch.eye(dim, dim, device=y.device).view(1, dim, dim).repeat(batchSize, 1, 1).type(y.dtype)
-    # #     I_M = torch.ones(batchSize, dim, dim, device=y.device).type(y.dtype)
-    # #     y_pow2 = y.bmm(y.transpose(1, 2))
-    # #     dcov = I_M.bmm(y_pow2 * I) + (y_pow2 * I).bmm(I_M) - 2 * y_pow2
-    # #     dcov = torch.clamp(dcov, min=0.0)
-    # #
-    # #     dcov = torch.sqrt(dcov + 1e-5)
-    # #     matrix_B = dcov - 1. / dim * dcov.bmm(I_M) - 1. / dim * I_M.bmm(dcov) + 1. / (dim * dim) * I_M.bmm(dcov).bmm(I_M)
-    # #
-    # #
-    # #     Gamma_XY = torch.sum(torch.sum(matrix_A * matrix_B,dim=-1),dim=-1)  / (matrix_A.shape[-1] * matrix_A.shape[-2])
-    # #     Gamma_XX = torch.sum(torch.sum(matrix_A * matrix_A,dim=-1),dim=-1)  / (matrix_A.shape[-1] * matrix_A.shape[-2])
-    # #     Gamma_YY = torch.sum(torch.sum(matrix_B * matrix_B,dim=-1),dim=-1)  / (matrix_A.shape[-1] * matrix_A.shape[-2])
-    # #
-    # #     correlation_r = Gamma_XY / torch.sqrt(Gamma_XX * Gamma_YY + 1e-9)
-    # #     # correlation_r = torch.pow(Gamma_XY,2)/(Gamma_XX * Gamma_YY + 1e-9)
-    # #     return torch.mean(correlation_r)
 
     def LR(self,support_z,support_ys,query_z,query_ys):
         # clf = make_pipeline(StandardScaler(), SVC(gamma='auto',

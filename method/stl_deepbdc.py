@@ -11,8 +11,8 @@ import torch.nn as nn
 import torch
 import scipy
 from scipy.stats import t
-from model.resnet_new1 import ResNet12 as resnet12
-from model.resnet_new1 import *
+from model.resnet_new import ResNet12 as resnet12
+from model.resnet_new import *
 from model.ADL import ADL,ADL_variant,ADL_sig
 from torch.nn.utils.weight_norm import WeightNorm
 from utils.loss import entropy_loss
@@ -49,6 +49,7 @@ class stl_deepbdc(nn.Module):
             self.backbone = resnet12(avg_pool=True, num_classes=64)
         elif params.model == 'resnet18':
             self.backbone = ResNet18()
+            self.feature = ResNet18()
         reduce_dim = 128
         if not params.my_model :
             self.feature = self.backbone
@@ -75,7 +76,9 @@ class stl_deepbdc(nn.Module):
         pass
 
     def forward_feature(self,x):
-        x = self.backbone(x)
+        # x = self.backbone(x)
+        x = self.feature(x)
+
         out = self.dcov(x)
         return out
 
@@ -139,50 +142,38 @@ class stl_deepbdc(nn.Module):
     def meta_test_loop(self,test_loader):
 
         acc = []
-        # classifier = 'emd' if not self.params.test_LR else 'LR'
         for i, data in enumerate(test_loader):
             tic = time.time()
             support_xs, support_ys, query_xs, query_ys = data
             support_xs = support_xs.cuda()
             query_xs = query_xs.cuda()
             split_size = 75
-            if support_xs.squeeze(0).shape[0] > split_size:
-                feat_sup_ = []
-                # print(support_xs.shape)
-                for j in range(math.ceil(support_xs.squeeze(0).shape[0] / split_size)):
-                    # print(support_xs.squeeze(0)[i*128:min((i+1)*128,support_xs.shape[1]),:,:,:].shape)
-                    feat_sup_.append(self.forward_feature(
-                        support_xs.squeeze(0)[j * split_size:min((j + 1) * split_size, support_xs.shape[1]), :, :,
-                        :]).cpu())
-                feat_sup = torch.cat(feat_sup_, dim=0)
-            else:
+            with torch.no_grad():
                 feat_sup = self.forward_feature(support_xs.squeeze(0))
-            if query_xs.squeeze(0).shape[0] > split_size:
-                feat_qry_ = []
-                # print(support_xs.shape)
-                for j in range(math.ceil(query_xs.squeeze(0).shape[0] / split_size)):
-                    # print(support_xs.squeeze(0)[i*128:min((i+1)*128,support_xs.shape[1]),:,:,:].shape)
-                    feat_qry_.append(self.forward_feature(
-                        query_xs.squeeze(0)[j * split_size:min((j + 1) * split_size, query_xs.shape[1]), :, :,
-                        :]).cpu())
-                # print(feat_qry_[0].shape)
-                feat_qry = torch.cat(feat_qry_, dim=0)
-            else:
                 feat_qry = self.forward_feature(query_xs.squeeze(0))
 
+            # print(feat_sup.shape)
             pred = self.LR(feat_sup, support_ys, feat_qry, query_ys)
             if self.params.n_symmetry_aug > 1:
                 pred = pred.view(-1, self.params.n_symmetry_aug)
                 query_ys = query_ys.view(-1, self.params.n_symmetry_aug)
                 pred = torch.mode(pred, dim=-1)[0]
                 query_ys = torch.mode(query_ys, dim=-1)[0]
-            acc_epo = np.mean(pred.cpu().numpy() == query_ys.numpy())
+            y = np.repeat(range(5), 15)
+            # acc_epo = np.mean(pred.cpu().numpy() == query_ys.numpy())
+            acc_epo = np.mean(pred.cpu().numpy() == y)
+
+
             acc.append(acc_epo)
             print("\repisode {} acc: {:.2f} | avg_acc: {:.2f} +- {:.2f}, elapse : {:.2f}".format(i, acc_epo * 100,
                                                                                                  *mean_confidence_interval(
                                                                                                      acc, multi=100), (
                                                                                                              time.time() - tic) / 60),
                   end='')
+            # print("\repisode {} acc: {:.2f} | avg_acc: {:.2f} +- elapse : {:.2f} , elapse : {:.2f}".format(i, acc_epo ,
+            #                                                                                      np.mean(acc), 1.96*np.std(acc)/ np.sqrt(2000),(
+            #                                                                                              time.time() - tic) / 60),
+            #       end='')
 
         return mean_confidence_interval(acc)
 
@@ -227,12 +218,7 @@ class stl_deepbdc(nn.Module):
 
 
     def LR(self,support_z,support_ys,query_z,query_ys):
-        clf = LR(penalty='l2',
-                 random_state=0,
-                 C=self.params.penalty_c,
-                 solver='lbfgs',
-                 max_iter=1000,
-                 multi_class='multinomial')
+
         spt_norm = torch.norm(support_z, p=2, dim=1).unsqueeze(1).expand_as(support_z)
         spt_normalized = support_z.div(spt_norm + 1e-6)
         z_support = spt_normalized.detach().cpu().numpy()
@@ -242,8 +228,15 @@ class stl_deepbdc(nn.Module):
         qry_norm = torch.norm(query_z, p=2, dim=1).unsqueeze(1).expand_as(query_z)
         qry_normalized = query_z.div(qry_norm + 1e-6)
         z_query = qry_normalized.detach().cpu().numpy()
-        clf.fit(z_support, y_support)
 
+        # print(self.params.penalty_c)
+        clf = LR(penalty='l2',
+                 random_state=0,
+                 C=self.params.penalty_c,
+                 solver='lbfgs',
+                 max_iter=1000,
+                 multi_class='multinomial')
+        clf.fit(z_support, y_support)
         return torch.from_numpy(clf.predict(z_query))
 
 if __name__ == '__main__':

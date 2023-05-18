@@ -8,8 +8,9 @@ import tqdm
 from torch.utils.data import DataLoader
 # from data_load.DataSets.MiniImageNet import *
 from data_load.DataSets.MiniImageNet_BDC import *
+from data_load.DataSets.MiniImageNet_BDC_all import *
 
-from data_load.DataSets.CUB import *
+from data_load.DataSets.CUB_json import *
 from data_load.DataSets.TieredImageNet import *
 from data_load.DataSets.skin_198 import *
 from method.local_match import *
@@ -42,7 +43,7 @@ def parse_option():
                         choices=['miniimagenet', 'cub', 'tieredimagenet', 'fc100', 'tieredimagenet_yao', 'cifar_fs', 'skin198'])
     parser.add_argument('--data_root', type=str, default=DATA_DIR)
     parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
-    parser.add_argument('--model', default='resnet12',choices=['resnet12', 'resnet18'])
+    parser.add_argument('--model', default='resnet12',choices=['resnet12', 'resnet18','conv64','resnet34'])
     parser.add_argument('--img_size', default=84, type=int, choices=[84,224])
 
     # about model :
@@ -129,9 +130,19 @@ def parse_option():
     parser.add_argument('--metric', default='LR', choices=['LR','DN4'])
     parser.add_argument('--prompt', default=False, action='store_true')
     parser.add_argument('--constrastive', default=False, action='store_true')
-    parser.add_argument('--embeding_way', default='BDC', choices=['BDC','GE'])
+    parser.add_argument('--embeding_way', default='BDC', choices=['BDC','GE','baseline++'])
     parser.add_argument('--wd_test', type=float, default=5e-4)
     parser.add_argument('--LR', default=False,action='store_true')
+    parser.add_argument('--optim', default='Adam', choices=['Adam', 'SGD'])
+    parser.add_argument('--my_model', default=False, action='store_true')
+    parser.add_argument('--no_fix_seed', default=False, action='store_true')
+    parser.add_argument('--skin_split', default=0.1, type=float)
+    parser.add_argument('--cross_all', default=False,action='store_true')
+
+    parser.add_argument('--drop_few', default=0.6, type=float)
+    parser.add_argument('--ablation', default=0, type=int, choices=[0, 1, 2, 3])
+    parser.add_argument('--LR_rec', default=False,action='store_true')
+
 
 
     args = parser.parse_args()
@@ -181,26 +192,33 @@ def main():
     logging.info("-" * 100 + "Experiment " + (args.model_id if args.model_id else "") + "start!" + "-" * 100)
     # 记录实验超参数设置:
     logging.info(args.__dict__)
-
+    meta_valloader =None
     if args.dataset == 'miniimagenet':
         train_trans, test_trans = transforms_options[args.transform]
-        # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
         val_sup_trans =  train_trans
-        train_loader = DataLoader(ImageNet(args=args, partition=train_partition, transform=train_trans),
-                                  batch_size=args.batch_size, shuffle=True, pin_memory=False,
-                                  num_workers=args.num_workers)
-        meta_valloader = DataLoader(MetaImageNet(args=args, partition='val',
-                                                 train_transform=val_sup_trans,
-                                                 test_transform=test_trans),
-                                    batch_size=args.test_batch_size, shuffle=False, drop_last=False,
-                                    num_workers=args.num_workers)
-        if args.test:
-            meta_test_loader = DataLoader(MetaImageNet(args=args, partition='test',
-                                                       train_transform=val_sup_trans,
-                                                       test_transform=test_trans),
-                                          batch_size=args.test_batch_size, shuffle=False, drop_last=False,
-                                          num_workers=args.num_workers)
-        num_cls = 64
+        if args.cross_all:
+
+            train_loader = DataLoader(ImageNet_all(args=args, partition=train_partition, transform=train_trans),
+                                      batch_size=args.batch_size, shuffle=True, pin_memory=False,
+                                      num_workers=args.num_workers)
+            num_cls = 100
+        else:
+            # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
+            train_loader = DataLoader(ImageNet(args=args, partition=train_partition, transform=train_trans),
+                                      batch_size=args.batch_size, shuffle=True, pin_memory=False,
+                                      num_workers=args.num_workers)
+            meta_valloader = DataLoader(MetaImageNet(args=args, partition='val',
+                                                     train_transform=val_sup_trans,
+                                                     test_transform=test_trans),
+                                        batch_size=args.test_batch_size, shuffle=False, drop_last=False,
+                                        num_workers=args.num_workers)
+            if args.test:
+                meta_test_loader = DataLoader(MetaImageNet(args=args, partition='test',
+                                                           train_transform=val_sup_trans,
+                                                           test_transform=test_trans),
+                                              batch_size=args.test_batch_size, shuffle=False, drop_last=False,
+                                              num_workers=args.num_workers)
+            num_cls = 64
     elif args.dataset == 'cub':
         train_trans, test_trans = transforms_options[args.transform]
         # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
@@ -346,12 +364,12 @@ def main():
         print("Epoch {} of {} | Avg_loss: {:.2f} | Acc_train: {:.2f}  |  training eplase: {:.2f} min".format(epoch, args.max_epoch, avg_loss, acc, (time.time()-tic)/60) , )
         logging.info("Epoch {} of {} | Avg_loss: {:.2f} | Acc_train: {:.2f}  |  training eplase: {:.2f} min".format(epoch, args.max_epoch, avg_loss, acc, (time.time()-tic)/60) , )
         lr_scheduler.step()
-        if epoch%args.val_freq ==0  and epoch > args.max_epoch//2 :
+        if epoch%args.val_freq ==0 and epoch > args.max_epoch//2 :
             model.eval()
             with torch.no_grad():
                 # gen_val = tqdm.tqdm(meta_valloader)
                 tic = time.time()
-                mean , confidence = model.meta_val_loop(epoch,val_loader=meta_valloader)
+                mean , confidence = model.meta_test_loop(meta_valloader)
                 if not args.continue_pretrain and best_acc <= mean:
                     best_acc = mean
                     best_confidence = confidence

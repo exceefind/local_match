@@ -13,7 +13,9 @@ from torch.utils.data import DataLoader
 from data_load.DataSets.MiniImageNet_BDC import *
 
 from data_load.DataSets.CUB import *
+from data_load.DataSets.MiniImageNet_BDC_all import ImageNet_all
 from data_load.DataSets.TieredImageNet import *
+from data_load.DataSets.skin_198 import *
 # from method.Few_rec import Net_rec
 
 from method.local_match import *
@@ -155,11 +157,13 @@ if __name__ == '__main__':
     parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
     parser.add_argument('--model_type', default='best', choices=['best', 'last'])
 
-
-    parser.add_argument('--dataset', default='miniimagenet', choices=['mini_imagenet','tieredimagenet','cub'])
+    parser.add_argument('--dataset', type=str, default='miniimagenet',
+                        choices=['miniimagenet', 'cub', 'tieredimagenet', 'fc100', 'tieredimagenet_yao', 'cifar_fs',
+                                 'skin198'])
     parser.add_argument('--data_root', type=str, default=DATA_DIR)
 
-    parser.add_argument('--model', default='resnet12', choices=['resnet12', 'resnet18'])
+    parser.add_argument('--model', default='resnet12',choices=['resnet12', 'resnet18','conv64','resnet34'])
+
     parser.add_argument('--img_size', default=84, type=int, choices=[84, 224])
 
     parser.add_argument('--val_freq',default=5,type=int)
@@ -218,6 +222,13 @@ if __name__ == '__main__':
     parser.add_argument('--embeding_way', default='BDC', choices=['BDC','GE'])
     parser.add_argument('--wd_test', type=float, default=5e-4)
     parser.add_argument('--LR', default=False,action='store_true')
+    parser.add_argument('--optim', default='Adam', choices=['Adam', 'SGD'])
+    parser.add_argument('--my_model', default=False, action='store_true')
+    parser.add_argument('--no_fix_seed', default=False, action='store_true')
+    parser.add_argument('--skin_split', default=0.1, type=float)
+    parser.add_argument('--cross_all', default=False,action='store_true')
+
+
 
 
     args = parser.parse_args()
@@ -230,21 +241,34 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_device
     pprint(args)
     set_seed(args.seed)
-
+    meta_valloader = None
     train_partition = 'train'
     if args.dataset == 'miniimagenet':
         train_trans, test_trans = transforms_options[args.transform]
-        # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
-        val_sup_trans =  train_trans
-        train_loader = DataLoader(ImageNet(args=args, partition=train_partition, transform=train_trans),
-                                  batch_size=args.batch_size, shuffle=True, pin_memory=False,
-                                  num_workers=args.num_workers)
-        meta_valloader = DataLoader(MetaImageNet(args=args, partition='val',
-                                                 train_transform=val_sup_trans,
-                                                 test_transform=test_trans),
-                                    batch_size=args.test_batch_size, shuffle=False, drop_last=False,
-                                    num_workers=args.num_workers)
-        num_cls = 64
+        val_sup_trans = train_trans
+        if args.cross_all:
+
+            train_loader = DataLoader(ImageNet_all(args=args, partition=train_partition, transform=train_trans),
+                                      batch_size=args.batch_size, shuffle=True, pin_memory=False,
+                                      num_workers=args.num_workers)
+            num_cls = 100
+        else:
+            # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
+            train_loader = DataLoader(ImageNet(args=args, partition=train_partition, transform=train_trans),
+                                      batch_size=args.batch_size, shuffle=True, pin_memory=False,
+                                      num_workers=args.num_workers)
+            meta_valloader = DataLoader(MetaImageNet(args=args, partition='val',
+                                                     train_transform=val_sup_trans,
+                                                     test_transform=test_trans),
+                                        batch_size=args.test_batch_size, shuffle=False, drop_last=False,
+                                        num_workers=args.num_workers)
+            if args.test:
+                meta_test_loader = DataLoader(MetaImageNet(args=args, partition='test',
+                                                           train_transform=val_sup_trans,
+                                                           test_transform=test_trans),
+                                              batch_size=args.test_batch_size, shuffle=False, drop_last=False,
+                                              num_workers=args.num_workers)
+            num_cls = 64
     elif args.dataset == 'cub':
         train_trans, test_trans = transforms_options[args.transform]
         # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
@@ -273,6 +297,20 @@ if __name__ == '__main__':
                                     num_workers=args.num_workers)
 
         num_cls = 351
+    elif args.dataset == 'skin198':
+        train_trans, test_trans = transforms_options[args.transform]
+        # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
+        val_sup_trans =  train_trans
+        train_loader = DataLoader(Skin_198(args=args, partition=train_partition, transform=train_trans),
+                                  batch_size=args.batch_size, shuffle=True, pin_memory=False,
+                                  num_workers=args.num_workers)
+        meta_valloader = DataLoader(MetaSkin(args=args, partition='val',
+                                                 train_transform=val_sup_trans,
+                                                 test_transform=test_trans),
+                                    batch_size=args.test_batch_size, shuffle=False, drop_last=False,
+                                    num_workers=args.num_workers)
+
+        num_cls = 100
     else:
         ValueError('dataset error')
 

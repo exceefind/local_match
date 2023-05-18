@@ -77,8 +77,14 @@ transform_B = [
 transform_B_s = [
     transforms.Compose([
             # transforms.Resize([resize_size, resize_size]),
+            # transforms.CenterCrop(img_size),
+
             # transforms.RandomCrop(img_size,padding=2),
-            transforms.RandomResizedCrop(img_size,scale=(0.2,0.8)),
+            # 0214最常用 0.2-0.8
+            # transforms.RandomResizedCrop(img_size,scale=(0.2,0.8)),
+            transforms.RandomResizedCrop(img_size, scale=(0.3, 0.7)),
+            # transforms.RandomResizedCrop(img_size, scale=(0.4, 0.8)),
+
             # transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
@@ -105,6 +111,26 @@ transform_B224 = [
             # transforms.RandomResizedCrop(img_size, scale=(0.4,0.6)),
             transforms.RandomHorizontalFlip(),
             transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+            transforms.ToTensor(),
+            normalize
+        ]),
+
+    transforms.Compose([
+        transforms.Resize([resize_size, resize_size]),
+        transforms.CenterCrop(img_size),
+        transforms.ToTensor(),
+        normalize
+    ])
+]
+
+transform_Bs224 = [
+    transforms.Compose([
+            # transforms.RandomResizedCrop(img_size),
+            transforms.RandomResizedCrop(img_size, scale=(0.3, 0.7)),
+
+            # transforms.RandomResizedCrop(img_size, scale=(0.4,0.6)),
+            transforms.RandomHorizontalFlip(),
+            # transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
             transforms.ToTensor(),
             normalize
         ]),
@@ -188,6 +214,7 @@ transforms_options = {
     'A': transform_A,
     'B': transform_B,
     'B224':transform_B224,
+    'Bs224':transform_Bs224,
     'B_s':transform_B_s,
     'B2':transform_B2,
     'C': transform_C,

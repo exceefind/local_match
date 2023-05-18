@@ -399,7 +399,7 @@ class resnet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, is_feat=False,is_FPN=None):
+    def forward(self, x, is_feat=False):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
@@ -419,3 +419,26 @@ def ResNet34s(keep_prob=1.0, avg_pool=False, **kwargs):
     """
     model = resnet(BasicBlockVariant, [2, 3, 4, 2], keep_prob=keep_prob, avg_pool=avg_pool, **kwargs)
     return model
+
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser('argument for training')
+    parser.add_argument('--model', type=str, default='resnet12',
+                        choices=['resnet12', 'resnet18', 'resnet24', 'resnet50', 'resnet101',
+                                 'seresnet12', 'seresnet18', 'seresnet24', 'seresnet50',
+                                 'seresnet101'])
+    args = parser.parse_args()
+
+    model_dict = {
+        'resnet12': ResNet12,
+    }
+
+    model = model_dict[args.model](avg_pool=True, drop_rate=0.1, dropblock_size=5, num_classes=64)
+    data = torch.randn(2, 3, 84, 84)
+    model = model.cuda()
+    data = data.cuda()
+    feat, logit = model(data, is_feat=True)
+    print(feat[-1].shape)
+    print(logit.shape)

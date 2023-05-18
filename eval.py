@@ -36,7 +36,8 @@ def parse_option():
                         choices=['miniimagenet', 'cub', 'tieredimagenet', 'fc100', 'tieredimagenet_yao', 'cifar_fs', 'skin198'])
     parser.add_argument('--data_root', type=str, default=DATA_DIR)
     parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
-    parser.add_argument('--model', default='resnet12',choices=['resnet12', 'resnet18'])
+    parser.add_argument('--model', default='resnet12', choices=['resnet12', 'resnet18','conv64','resnet34'])
+
     parser.add_argument('--img_size', default=84, type=int, choices=[84,224])
 
 
@@ -53,34 +54,33 @@ def parse_option():
 
     # about meta test
     parser.add_argument('--val_freq',default=5,type=int)
-    parser.add_argument('--local_mode',default='local_mix', choices=['cell', 'local_mix' ,'cell_mix','mask_pool'])
+    # parser.add_argument('--local_mode',default='local_mix', choices=['cell', 'local_mix' ,'cell_mix','mask_pool'])
     parser.add_argument('--set', type=str, default='test', choices=['val', 'test'], help='the set for validation')
     parser.add_argument('--n_way', type=int, default=5)
     parser.add_argument('--n_shot', type=int, default=1)
     parser.add_argument('--n_aug_support_samples',type=int, default=1)
     parser.add_argument('--n_queries', type=int, default=15)
-    parser.add_argument('--temperature', type=float, default=12.5)
+    # parser.add_argument('--temperature', type=float, default=12.5)
     # parser.add_argument('--metric', type=str, default='cosine')
     parser.add_argument('--n_episodes', type=int, default=1000)
-    parser.add_argument('--n_local_proto', default=3, type=int)
+    # parser.add_argument('--n_local_proto', default=3, type=int)
     parser.add_argument('--num_workers', default=2, type=int)
 
     #  test_batch_size is 1  maen  1 episode of fsl
     parser.add_argument('--test_batch_size',default=1)
-
-    parser.add_argument('--sfc_lr', default=100,type = float)
-    parser.add_argument('--sfc_bs', default=5, type=int)
-    parser.add_argument('--sfc_update_step', default=100)
-    parser.add_argument('--include_bg', default=False, action='store_true')
+    # parser.add_argument('--sfc_lr', default=100,type = float)
+    # parser.add_argument('--sfc_bs', default=5, type=int)
+    # parser.add_argument('--sfc_update_step', default=100)
+    # parser.add_argument('--include_bg', default=False, action='store_true')
     # parser.add_argument('--norm',default='center')
 
 
     # about deepemd setting
-    parser.add_argument('--norm', type=str, default='center', choices=['center'])
-    parser.add_argument('--solver', type=str, default='opencv', choices=['opencv'])
+    # parser.add_argument('--norm', type=str, default='center', choices=['center'])
+    # parser.add_argument('--solver', type=str, default='opencv', choices=['opencv'])
     parser.add_argument('--deep_emd', default=False, action='store_true')
-    parser.add_argument('-form', type=str, default='L2', choices=['QP', 'L2'])
-    parser.add_argument('-l2_strength', type=float, default=0.000001)
+    # parser.add_argument('-form', type=str, default='L2', choices=['QP', 'L2'])
+    # parser.add_argument('-l2_strength', type=float, default=0.000001)
 
     # setting
     parser.add_argument('--gpu', default=0, type=int)
@@ -91,28 +91,28 @@ def parse_option():
     parser.add_argument('--model_type',default='best',choices=['best','last'])
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--no_save_model', default=False, action='store_true')
-    parser.add_argument('--feature_pyramid', default=False, action='store_true')
+    # parser.add_argument('--feature_pyramid', default=False, action='store_true')
     parser.add_argument('--method',default='local_proto',choices=['local_proto','good_metric','stl_deepbdc','confusion'])
     parser.add_argument('--distill_model', default=None,type=str,help='about distillation model path')
     parser.add_argument('--penalty_c', default=1.0, type=float)
-    parser.add_argument('--stop_grad', default=False, action='store_true')
-    parser.add_argument('--learnable_alpha', default=False, action='store_true')
+    # parser.add_argument('--stop_grad', default=False, action='store_true')
+    # parser.add_argument('--learnable_alpha', default=False, action='store_true')
     parser.add_argument('--idea_variant', default=False, action='store_true')
-    parser.add_argument('--normalize_feat', default=False, action='store_true')
-    parser.add_argument('--normalize_bdc', default=False, action='store_true')
+    # parser.add_argument('--normalize_feat', default=False, action='store_true')
+    # parser.add_argument('--normalize_bdc', default=False, action='store_true')
     parser.add_argument('--test_times', default=1, type=int)
 
 
     # confusion representation:
-    parser.add_argument('--no_diag', default=False, action='store_true')
+    # parser.add_argument('--no_diag', default=False, action='store_true')
     parser.add_argument('--confusion', default=False, action='store_true')
-    parser.add_argument('--k_c', default=3, type=float, help='k of cofusion')
-    parser.add_argument('--confusion_beta', type=float, default=1.)
-    parser.add_argument('--confusion_drop_rate', default=0.3, type=float)
+    # parser.add_argument('--k_c', default=3, type=float, help='k of cofusion')
+    # parser.add_argument('--confusion_beta', type=float, default=1.)
+    # parser.add_argument('--confusion_drop_rate', default=0.3, type=float)
     parser.add_argument('--n_symmetry_aug', default=1, type=int)
-    parser.add_argument('--ths_confusion', default=None, type=float,help='threshold of confusion')
-    parser.add_argument('--lego', default=False, action='store_true')
-    parser.add_argument('--temp_element',default=False,action='store_true')
+    # parser.add_argument('--ths_confusion', default=None, type=float,help='threshold of confusion')
+    # parser.add_argument('--lego', default=False, action='store_true')
+    # parser.add_argument('--temp_element',default=False,action='store_true')
     parser.add_argument('--metric', default='LR', choices=['LR','DN4'])
     parser.add_argument('--prompt', default=False, action='store_true')
     parser.add_argument('--constrastive', default=False, action='store_true')
@@ -122,6 +122,11 @@ def parse_option():
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--optim', default='Adam',choices=['Adam', 'SGD'])
     parser.add_argument('--my_model', default=False,action='store_true')
+    parser.add_argument('--LR_rec', default=False, action='store_true')
+    parser.add_argument('--drop_few',default=0.5,type=float)
+    parser.add_argument('--skin_split', default=0.5, type=float)
+    parser.add_argument('--no_fix_seed',default=False,action='store_true')
+    parser.add_argument('--Loss_ablation',default=3,type= int ,choices=[0,1,2,3])
 
 
     args = parser.parse_args()
@@ -148,6 +153,8 @@ def main():
     args = parse_option()
     if args.img_size == 224 and args.transform == 'B':
         args.transform = 'B224'
+    if args.img_size == 224 and args.transform == 'B_s':
+        args.transform = 'Bs224'
     # if args.transform == 'B':
     #     args.transform = 'B_s'
     pprint(args)
@@ -156,7 +163,7 @@ def main():
     else:
         gpu_device = "0"
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_device
-    set_seed(args.seed)
+    # set_seed(args.seed)
 
 
     if args.dataset == 'miniimagenet':
@@ -172,9 +179,10 @@ def main():
     elif args.dataset == 'cub':
         train_trans, test_trans = transforms_options[args.transform]
         # val_sup_trans = test_trans if args.n_aug_support_samples == 1 else train_trans
-        val_sup_trans =  train_trans
+        # val_sup_trans =  train_trans
+        # print(args.set)
         meta_test_loader = DataLoader(MetaCUB(args=args, partition=args.set,
-                                                   train_transform=val_sup_trans,
+                                                   train_transform=train_trans,
                                                    test_transform=test_trans),
                                       batch_size=args.test_batch_size, shuffle=False, drop_last=False,
                                       num_workers=args.num_workers)
@@ -215,7 +223,7 @@ def main():
     else:
         model = None
         assert model != None
-
+    model.eval()
     if args.continue_pretrain:
         if args.my_model :
             model = model_load(args,model)
@@ -223,14 +231,16 @@ def main():
             model = load_model(model,os.path.join(args.save_dir,args.distill_model))
 
     print("-"*20+"  start meta test...  "+"-"*20)
-    model.eval()
+    # model.eval()
     # gen_test = tqdm.tqdm(meta_test_loader)
     acc_sum = 0
     confidence_sum = 0
     for t in range(args.test_times):
+        meta_test_loader.seed_start = t*args.n_episodes
         with torch.no_grad():
             tic = time.time()
             mean, confidence = model.meta_test_loop(meta_test_loader)
+            # mean, confidence = model.meta_val_loop(None,meta_test_loader,None)
             acc_sum += mean
             confidence_sum += confidence
             print()
